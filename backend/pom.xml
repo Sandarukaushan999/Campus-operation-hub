@@ -82,9 +82,12 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-            <plugin>
+                        <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.campus.SmartCampusApplication</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
