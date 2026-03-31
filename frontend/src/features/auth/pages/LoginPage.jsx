@@ -15,11 +15,19 @@ const LoginPage = () => {
     setError("");
     setLoading(true);
     try {
-      const authData = await loginApi(form);
+      const authData = await loginApi({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+      });
       login(authData);
       navigate("/dashboard");
     } catch (err) {
-      setError(err?.response?.data?.message ?? "Login failed");
+      const details = err?.response?.data?.details;
+      setError(
+        (Array.isArray(details) && details.length > 0 && details[0]) ||
+        err?.response?.data?.message ||
+        "Login failed",
+      );
     } finally {
       setLoading(false);
     }

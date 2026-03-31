@@ -15,6 +15,13 @@ export const getAllBookings = async () => {
   return response.data.data;
 };
 
+export const getBookingAvailability = async (resourceId, from, to) => {
+  const response = await api.get("/bookings/availability", {
+    params: { resourceId, from, to },
+  });
+  return response.data.data;
+};
+
 export const getBookingById = async (id) => {
   const response = await api.get(`/bookings/${id}`);
   return response.data.data;
