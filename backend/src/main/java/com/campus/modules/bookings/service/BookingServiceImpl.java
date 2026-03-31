@@ -53,6 +53,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse createBooking(String userId, CreateBookingRequest request) {
         ValidationUtil.validateBookingDate(request.date());
         ValidationUtil.validateBookingTime(request.startTime(), request.endTime());
+        ValidationUtil.validateBookingStartNotPast(request.date(), request.startTime());
 
         Resource resource = resourceRepository.findById(request.resourceId())
             .orElseThrow(() -> new ResourceNotFoundException("Resource not found"));
@@ -286,3 +287,4 @@ public class BookingServiceImpl implements BookingService {
         );
     }
 }
+

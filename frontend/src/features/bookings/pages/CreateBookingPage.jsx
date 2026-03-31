@@ -55,7 +55,10 @@ const CreateBookingPage = () => {
     endTime: "",
   });
 
-  const todayKey = toDateKey(new Date());
+  const today = new Date();
+  const todayKey = toDateKey(today);
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const canGoPrevMonth = calendarMonth > currentMonthStart;
   const calendarDays = useMemo(() => buildCalendarDays(calendarMonth), [calendarMonth]);
   const selectedDay = form.date ? availabilityByDate[form.date] : null;
 
@@ -178,7 +181,12 @@ const CreateBookingPage = () => {
             <button
               className="btn btn-light"
               type="button"
-              onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+              disabled={!canGoPrevMonth}
+              onClick={() => {
+                if (canGoPrevMonth) {
+                  setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+                }
+              }}
             >
               Previous
             </button>
@@ -342,3 +350,5 @@ const CreateBookingPage = () => {
 };
 
 export default CreateBookingPage;
+
+
