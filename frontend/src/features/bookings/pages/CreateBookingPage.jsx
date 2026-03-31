@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createBooking, getBookingAvailability } from "../../../api/bookingApi";
 import { getResources } from "../../../api/resourceApi";
 
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const slotStartHour = 8;
+const slotEndHour = 20;
+const slotMinutes = 60;
+const availabilityPollMs = 2000;
 
 const pad2 = (value) => String(value).padStart(2, "0");
 
@@ -11,6 +16,8 @@ const toDateKey = (date) =>
   `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 
 const toTimeKey = (time) => (time && time.length >= 5 ? time.slice(0, 5) : "");
+
+const slotKey = (startTime, endTime) => `${toTimeKey(startTime)}-${toTimeKey(endTime)}`;
 
 const parseServerError = (err, fallback) => {
   const details = err?.response?.data?.details;
@@ -36,6 +43,23 @@ const buildCalendarDays = (monthDate) => {
   });
 };
 
+const buildDaySlots = () => {
+  const slots = [];
+  for (let minute = slotStartHour * 60; minute + slotMinutes <= slotEndHour * 60; minute += slotMinutes) {
+    const startHour = Math.floor(minute / 60);
+    const startMinute = minute % 60;
+    const end = minute + slotMinutes;
+    const endHour = Math.floor(end / 60);
+    const endMinute = end % 60;
+
+    slots.push({
+      startTime: `${pad2(startHour)}:${pad2(startMinute)}`,
+      endTime: `${pad2(endHour)}:${pad2(endMinute)}`,
+    });
+  }
+  return slots;
+};
+
 const CreateBookingPage = () => {
   const navigate = useNavigate();
   const [resources, setResources] = useState([]);
@@ -55,12 +79,81 @@ const CreateBookingPage = () => {
     endTime: "",
   });
 
+  const monthFrom = useMemo(
+    () => toDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)),
+    [calendarMonth],
+  );
+  const monthTo = useMemo(
+    () => toDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0)),
+    [calendarMonth],
+  );
+
   const today = new Date();
   const todayKey = toDateKey(today);
   const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const canGoPrevMonth = calendarMonth > currentMonthStart;
   const calendarDays = useMemo(() => buildCalendarDays(calendarMonth), [calendarMonth]);
+  const daySlots = useMemo(() => buildDaySlots(), []);
   const selectedDay = form.date ? availabilityByDate[form.date] : null;
+
+  const availableSlotKeySet = useMemo(() => {
+    const keys = new Set();
+    (selectedDay?.availableSlots ?? []).forEach((slot) => {
+      keys.add(slotKey(slot.startTime, slot.endTime));
+    });
+    return keys;
+  }, [selectedDay]);
+
+  const refreshAvailability = useCallback(
+    async (showLoader) => {
+      if (!form.resourceId) {
+        setAvailabilityByDate({});
+        return;
+      }
+
+      if (showLoader) {
+        setAvailabilityLoading(true);
+      }
+
+      try {
+        const data = await getBookingAvailability(form.resourceId, monthFrom, monthTo);
+
+        const next = {};
+        data.days.forEach((day) => {
+          next[day.date] = day;
+        });
+
+        setAvailabilityByDate(next);
+
+        setForm((prev) => {
+          if (prev.date && next[prev.date]) {
+            return prev;
+          }
+
+          const firstAvailableDay = data.days.find((day) => day.availableSlotCount > 0);
+          if (!firstAvailableDay) {
+            return { ...prev, date: "", startTime: "", endTime: "" };
+          }
+
+          return {
+            ...prev,
+            date: firstAvailableDay.date,
+            startTime: "",
+            endTime: "",
+          };
+        });
+      } catch (err) {
+        if (showLoader) {
+          setError(parseServerError(err, "Failed to load availability calendar"));
+        }
+      } finally {
+        if (showLoader) {
+          setAvailabilityLoading(false);
+        }
+      }
+    },
+    [form.resourceId, monthFrom, monthTo],
+  );
 
   useEffect(() => {
     const fetchResources = async () => {
@@ -82,51 +175,36 @@ const CreateBookingPage = () => {
   }, []);
 
   useEffect(() => {
+    refreshAvailability(true);
+  }, [refreshAvailability]);
+
+  useEffect(() => {
     if (!form.resourceId) {
-      setAvailabilityByDate({});
+      return undefined;
+    }
+
+    const intervalId = setInterval(() => {
+      refreshAvailability(false);
+    }, availabilityPollMs);
+
+    return () => clearInterval(intervalId);
+  }, [form.resourceId, refreshAvailability]);
+
+  useEffect(() => {
+    if (!form.date || !form.startTime || !form.endTime || !selectedDay) {
       return;
     }
 
-    const fetchAvailability = async () => {
-      setAvailabilityLoading(true);
-      try {
-        const from = toDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
-        const to = toDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0));
-        const data = await getBookingAvailability(form.resourceId, from, to);
+    const selectedSlotKey = slotKey(form.startTime, form.endTime);
+    const stillAvailable = selectedDay.availableSlots.some(
+      (slot) => slotKey(slot.startTime, slot.endTime) === selectedSlotKey,
+    );
 
-        const next = {};
-        data.days.forEach((day) => {
-          next[day.date] = day;
-        });
-
-        setAvailabilityByDate(next);
-
-        setForm((prev) => {
-          if (prev.date && next[prev.date]?.availableSlotCount > 0) {
-            return prev;
-          }
-
-          const firstAvailableDay = data.days.find((day) => day.availableSlotCount > 0);
-          if (!firstAvailableDay) {
-            return { ...prev, date: "", startTime: "", endTime: "" };
-          }
-
-          return {
-            ...prev,
-            date: firstAvailableDay.date,
-            startTime: "",
-            endTime: "",
-          };
-        });
-      } catch (err) {
-        setError(parseServerError(err, "Failed to load availability calendar"));
-      } finally {
-        setAvailabilityLoading(false);
-      }
-    };
-
-    fetchAvailability();
-  }, [form.resourceId, calendarMonth]);
+    if (!stillAvailable) {
+      setForm((prev) => ({ ...prev, startTime: "", endTime: "" }));
+      setError("That slot was just booked by another student. Please choose another available slot.");
+    }
+  }, [selectedDay, form.date, form.startTime, form.endTime]);
 
   const onDateSelect = (dateKey) => {
     setError("");
@@ -159,6 +237,22 @@ const CreateBookingPage = () => {
 
     setLoading(true);
     try {
+      const latest = await getBookingAvailability(form.resourceId, form.date, form.date);
+      const latestDay = latest.days[0];
+      const selectedSlotKey = slotKey(form.startTime, form.endTime);
+      const stillAvailable = latestDay?.availableSlots?.some(
+        (slot) => slotKey(slot.startTime, slot.endTime) === selectedSlotKey,
+      );
+
+      if (!stillAvailable) {
+        if (latestDay) {
+          setAvailabilityByDate((prev) => ({ ...prev, [form.date]: latestDay }));
+        }
+        setForm((prev) => ({ ...prev, startTime: "", endTime: "" }));
+        setError("That slot was just booked by another student. Please choose another available slot.");
+        return;
+      }
+
       const created = await createBooking({
         ...form,
         title: form.title.trim(),
@@ -167,6 +261,7 @@ const CreateBookingPage = () => {
       navigate(`/bookings/${created.id}`);
     } catch (err) {
       setError(parseServerError(err, "Failed to create booking"));
+      refreshAvailability(false);
     } finally {
       setLoading(false);
     }
@@ -239,7 +334,7 @@ const CreateBookingPage = () => {
             const isCurrentMonth = day.getMonth() === calendarMonth.getMonth();
             const isPast = dateKey < todayKey;
             const isSelected = form.date === dateKey;
-            const isSelectable = isCurrentMonth && !isPast && dayAvailability?.availableSlotCount > 0;
+            const isSelectable = isCurrentMonth && !isPast && Boolean(dayAvailability);
 
             return (
               <button
@@ -273,27 +368,34 @@ const CreateBookingPage = () => {
             <p className="muted">
               Date: <strong>{form.date}</strong>
             </p>
-            <div className="slot-list">
-              {(selectedDay?.availableSlots ?? []).map((slot) => {
-                const start = toTimeKey(slot.startTime);
-                const end = toTimeKey(slot.endTime);
-                const active = form.startTime === start && form.endTime === end;
 
-                return (
-                  <button
-                    key={`${start}-${end}`}
-                    type="button"
-                    className={`slot-btn${active ? " is-active" : ""}`}
-                    onClick={() => onSlotSelect(form.date, slot)}
-                  >
-                    {start} - {end}
-                  </button>
-                );
-              })}
-              {selectedDay && selectedDay.availableSlots.length === 0 && (
-                <p>No available slots on this date.</p>
-              )}
-            </div>
+            {!selectedDay && availabilityLoading && <p>Loading slots...</p>}
+
+            {selectedDay && (
+              <div className="slot-list">
+                {daySlots.map((slot) => {
+                  const key = slotKey(slot.startTime, slot.endTime);
+                  const isAvailable = availableSlotKeySet.has(key);
+                  const isTaken = !isAvailable;
+                  const active = isAvailable && form.startTime === slot.startTime && form.endTime === slot.endTime;
+
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`slot-btn${active ? " is-active" : ""}${isTaken ? " is-taken" : ""}`}
+                      disabled={isTaken}
+                      onClick={() => onSlotSelect(form.date, slot)}
+                    >
+                      <span>{slot.startTime} - {slot.endTime}</span>
+                      <span className={`slot-status${isTaken ? " is-taken" : " is-open"}`}>
+                        {isTaken ? "Taken" : "Available"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
 
@@ -350,5 +452,4 @@ const CreateBookingPage = () => {
 };
 
 export default CreateBookingPage;
-
 
