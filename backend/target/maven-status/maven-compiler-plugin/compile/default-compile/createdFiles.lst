@@ -8,7 +8,6 @@ com\campus\SmartCampusApplication.class
 com\campus\domain\User.class
 com\campus\modules\bookings\dto\ApproveBookingRequest.class
 com\campus\modules\auth\service\AuthService.class
-com\campus\security\SecurityConfig.class
 com\campus\repository\CommentRepository.class
 com\campus\common\enums\ResourceStatus.class
 com\campus\modules\bookings\service\BookingServiceImpl.class

@@ -2,10 +2,12 @@ package com.campus.modules.bookings.service;
 
 import com.campus.common.enums.UserRole;
 import com.campus.modules.bookings.dto.ApproveBookingRequest;
+import com.campus.modules.bookings.dto.BookingAvailabilityResponse;
 import com.campus.modules.bookings.dto.BookingResponse;
 import com.campus.modules.bookings.dto.CancelBookingRequest;
 import com.campus.modules.bookings.dto.CreateBookingRequest;
 import com.campus.modules.bookings.dto.RejectBookingRequest;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface BookingService {
@@ -23,4 +25,6 @@ public interface BookingService {
     BookingResponse rejectBooking(String bookingId, String approverId, RejectBookingRequest request);
 
     BookingResponse cancelBooking(String bookingId, String actorId, UserRole actorRole, CancelBookingRequest request);
+
+    BookingAvailabilityResponse getAvailability(String resourceId, LocalDate from, LocalDate to);
 }

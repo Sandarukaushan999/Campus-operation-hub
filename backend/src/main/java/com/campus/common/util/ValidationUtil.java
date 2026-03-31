@@ -32,4 +32,15 @@ public final class ValidationUtil {
             throw new BadRequestException("Start time must be before end time");
         }
     }
+
+    public static void validateBookingStartNotPast(LocalDate date, LocalTime startTime) {
+        if (!LocalDate.now().equals(date)) {
+            return;
+        }
+
+        // Prevent creating slots that have already started today.
+        if (!startTime.isAfter(LocalTime.now())) {
+            throw new BadRequestException("Start time must be in the future for today");
+        }
+    }
 }
