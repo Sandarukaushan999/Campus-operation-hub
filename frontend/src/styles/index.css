@@ -172,17 +172,22 @@ textarea {
 
 .nav-brand-mark {
   align-items: center;
-  background: linear-gradient(145deg, #0d83c7, #09598a);
+  background: linear-gradient(145deg, #ffffff, #ecf4ff);
+  border: 1px solid #b7d0e6;
   border-radius: 12px;
-  box-shadow: 0 10px 24px rgba(4, 74, 115, 0.28);
-  color: #fff;
+  box-shadow: 0 10px 20px rgba(9, 68, 106, 0.2);
   display: inline-flex;
-  font-size: 12px;
-  font-weight: 800;
-  height: 34px;
+  height: 38px;
   justify-content: center;
-  letter-spacing: 0.08em;
-  width: 34px;
+  overflow: hidden;
+  width: 38px;
+}
+
+.nav-brand-logo {
+  display: block;
+  height: 30px;
+  object-fit: contain;
+  width: 30px;
 }
 
 .nav-brand-text {

@@ -52,7 +52,6 @@ const MyBookingsPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [cancelingId, setCancelingId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [segment, setSegment] = useState("UPCOMING");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
   const fetchBookings = useCallback(async (showLoader = false) => {
@@ -127,20 +126,8 @@ const MyBookingsPage = () => {
 
   const visibleBookings = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const now = new Date();
 
     const base = preparedBookings.filter((booking) => {
-      if (segment === "UPCOMING") {
-        if (booking.endAt < now) return false;
-        if (booking.status === "CANCELLED" || booking.status === "REJECTED") return false;
-      }
-
-      if (segment === "HISTORY") {
-        if (booking.endAt >= now && booking.status !== "CANCELLED" && booking.status !== "REJECTED") {
-          return false;
-        }
-      }
-
       if (statusFilter !== "ALL" && booking.status !== statusFilter) {
         return false;
       }
@@ -152,13 +139,8 @@ const MyBookingsPage = () => {
       return true;
     });
 
-    return base.sort((a, b) => {
-      if (segment === "UPCOMING") {
-        return a.startAt - b.startAt;
-      }
-      return b.startAt - a.startAt;
-    });
-  }, [preparedBookings, searchTerm, segment, statusFilter]);
+    return base.sort((a, b) => b.startAt - a.startAt);
+  }, [preparedBookings, searchTerm, statusFilter]);
 
   const onCancel = async (bookingId) => {
     setCancelingId(bookingId);
@@ -176,7 +158,6 @@ const MyBookingsPage = () => {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setSegment("UPCOMING");
     setStatusFilter("ALL");
   };
 
@@ -226,27 +207,7 @@ const MyBookingsPage = () => {
 
       <div className="card bookings-controls">
         <div className="bookings-filter-tabs">
-          <button
-            type="button"
-            className={`bookings-filter-tab${segment === "UPCOMING" ? " is-active" : ""}`}
-            onClick={() => setSegment("UPCOMING")}
-          >
-            Upcoming
-          </button>
-          <button
-            type="button"
-            className={`bookings-filter-tab${segment === "ALL" ? " is-active" : ""}`}
-            onClick={() => setSegment("ALL")}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            className={`bookings-filter-tab${segment === "HISTORY" ? " is-active" : ""}`}
-            onClick={() => setSegment("HISTORY")}
-          >
-            History
-          </button>
+          <span className="bookings-filter-tab is-active">All</span>
         </div>
 
         <div className="row bookings-input-row">

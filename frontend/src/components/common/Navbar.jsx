@@ -1,5 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
+import systemLogo from "../../assets/images/system-logo.png";
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -23,7 +24,9 @@ const Navbar = () => {
   return (
     <nav className="nav">
       <div className="nav-brand">
-        <span className="nav-brand-mark">SC</span>
+        <span className="nav-brand-mark">
+          <img className="nav-brand-logo" src={systemLogo} alt="Smart Campus Hub logo" />
+        </span>
         <div className="nav-brand-text">
           <strong>Smart Campus Hub</strong>
           <small>Operations Console</small>
