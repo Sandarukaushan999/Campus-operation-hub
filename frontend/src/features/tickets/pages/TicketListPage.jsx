@@ -1,31 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { assignTicket, getAllTickets } from "../../../api/ticketApi";
+import "../tickets.css";
 
-// Admin moderation view: see every ticket in the system, filter by status,
-// quick-assign a technician without leaving the list.
-//
-// Detailed actions like Resolve / Reject / Close are done from
-// TicketDetailsPage.
-
-const statusClass = (status) => {
-  if (status === "OPEN") return "status-pill is-pending";
-  if (status === "ASSIGNED") return "status-pill is-pending";
-  if (status === "IN_PROGRESS") return "status-pill is-pending";
-  if (status === "RESOLVED") return "status-pill is-approved";
-  if (status === "CLOSED") return "status-pill is-approved";
-  if (status === "REJECTED") return "status-pill is-rejected";
-  return "status-pill";
+const STATUS_LABELS = {
+  OPEN: "Open",
+  ASSIGNED: "Assigned",
+  IN_PROGRESS: "In Progress",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+  REJECTED: "Rejected",
 };
 
-const statusLabel = (status) => {
-  if (status === "OPEN") return "Open";
-  if (status === "ASSIGNED") return "Assigned";
-  if (status === "IN_PROGRESS") return "In Progress";
-  if (status === "RESOLVED") return "Resolved";
-  if (status === "CLOSED") return "Closed";
-  if (status === "REJECTED") return "Rejected";
-  return status;
+const CATEGORY_META = {
+  ELECTRICAL:   { label: "Electrical",   icon: "⚡" },
+  NETWORK:      { label: "Network",      icon: "📡" },
+  FURNITURE:    { label: "Furniture",    icon: "🪑" },
+  IT_EQUIPMENT: { label: "IT Equipment", icon: "💻" },
+  PLUMBING:     { label: "Plumbing",     icon: "🚰" },
+  OTHER:        { label: "Other",        icon: "📌" },
 };
 
 const formatDate = (isoString) => {
@@ -40,9 +33,7 @@ const formatDate = (isoString) => {
 
 const parseErrorMessage = (err, fallback) => {
   const details = err?.response?.data?.details;
-  if (Array.isArray(details) && details.length > 0) {
-    return details[0];
-  }
+  if (Array.isArray(details) && details.length > 0) return details[0];
   return err?.response?.data?.message ?? fallback;
 };
 
@@ -53,8 +44,6 @@ const TicketListPage = () => {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // For the quick-assign panel: which ticket id is open and what value
-  // the admin has typed.
   const [assignTargetId, setAssignTargetId] = useState("");
   const [assignTechId, setAssignTechId] = useState("");
   const [assigning, setAssigning] = useState(false);
@@ -62,8 +51,6 @@ const TicketListPage = () => {
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
-      // We pass the status to the backend so the filter is server-side too.
-      // ALL means "no filter".
       const data = await getAllTickets(statusFilter === "ALL" ? null : statusFilter);
       setTickets(data);
       setError("");
@@ -74,11 +61,8 @@ const TicketListPage = () => {
     }
   }, [statusFilter]);
 
-  useEffect(() => {
-    fetchTickets();
-  }, [fetchTickets]);
+  useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
-  // Client-side search on top of the server filter.
   const visibleTickets = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return tickets;
@@ -117,117 +101,134 @@ const TicketListPage = () => {
   };
 
   return (
-    <section className="grid my-bookings-shell">
+    <section className="tk-page">
 
-      <div className="card bookings-hero">
-        <div className="spread">
+      {/* HERO */}
+      <div className="tk-hero">
+        <div className="tk-hero-top">
           <div>
-            <h2>All Tickets (Admin)</h2>
-            <p className="bookings-subtitle">
-              Moderate every reported incident across the campus.
+            <h2 className="tk-hero-title">🛠 All Tickets · Admin</h2>
+            <p className="tk-hero-sub">
+              Moderate every reported incident across the campus. Assign technicians to open tickets.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="card bookings-controls">
-        <div className="row bookings-input-row">
+      {/* FILTERS */}
+      <div className="tk-filters">
+        <div className="tk-filter-search">
           <input
-            className="input"
+            type="text"
             placeholder="Search by title, description, location, reporter id"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <select
-            className="input bookings-status-select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="OPEN">Open</option>
-            <option value="ASSIGNED">Assigned</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="RESOLVED">Resolved</option>
-            <option value="CLOSED">Closed</option>
-            <option value="REJECTED">Rejected</option>
-          </select>
         </div>
+        <select
+          className="tk-filter-select"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="ALL">All Statuses</option>
+          <option value="OPEN">Open</option>
+          <option value="ASSIGNED">Assigned</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="RESOLVED">Resolved</option>
+          <option value="CLOSED">Closed</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
-      {loading && <div className="card">Loading tickets...</div>}
+
+      {loading && (
+        <div className="tk-empty">
+          <div className="tk-empty-icon">⏳</div>
+          <p className="tk-empty-text">Loading tickets...</p>
+        </div>
+      )}
 
       {!loading && visibleTickets.length === 0 && (
-        <div className="card bookings-empty">
-          <h3>No tickets to show</h3>
-          <p>Either nothing has been reported yet, or your filters hide everything.</p>
+        <div className="tk-empty">
+          <div className="tk-empty-icon">📭</div>
+          <h3 className="tk-empty-title">No tickets to show</h3>
+          <p className="tk-empty-text">
+            Either nothing has been reported yet, or your filters hide everything.
+          </p>
         </div>
       )}
 
       {!loading && visibleTickets.length > 0 && (
-        <div className="bookings-card-grid">
+        <div className="tk-grid">
           {visibleTickets.map((ticket) => {
             const isAssignOpen = assignTargetId === ticket.id;
             const canAssign = ticket.status === "OPEN";
+            const cat = CATEGORY_META[ticket.category] ?? { label: ticket.category, icon: "📌" };
 
             return (
-              <article className="card booking-modern-card" key={ticket.id}>
-                <div className="spread">
+              <article className={`tk-card is-status-${ticket.status}`} key={ticket.id}>
+                <div className="tk-card-head">
                   <div>
-                    <h3>{ticket.title}</h3>
-                    <p className="muted booking-date-line">
-                      Reported {formatDate(ticket.createdAt)} by {ticket.createdBy}
+                    <h3 className="tk-card-title">{ticket.title}</h3>
+                    <p className="tk-card-date">
+                      Reported {formatDate(ticket.createdAt)} by {ticket.createdBy?.slice(0, 8)}
                     </p>
                   </div>
-                  <span className={statusClass(ticket.status)}>
-                    {statusLabel(ticket.status)}
+                  <span className={`tk-pill is-${ticket.status}`}>
+                    {STATUS_LABELS[ticket.status] ?? ticket.status}
                   </span>
                 </div>
 
-                <div className="booking-modern-meta">
-                  <span>{ticket.category}</span>
-                  <span>Priority: {ticket.priority}</span>
-                  <span>
-                    {ticket.location || `Resource: ${ticket.resourceId ?? "-"}`}
+                <div className="tk-card-meta">
+                  <span className="tk-chip">
+                    <span className="tk-chip-icon">{cat.icon}</span>
+                    {cat.label}
+                  </span>
+                  <span className={`tk-chip is-prio-${ticket.priority}`}>
+                    {ticket.priority}
+                  </span>
+                  <span className="tk-chip">
+                    <span className="tk-chip-icon">📍</span>
+                    {ticket.location || "Resource"}
                   </span>
                 </div>
 
                 {ticket.description && (
-                  <p className="booking-modern-purpose">
-                    {ticket.description.length > 200
-                      ? `${ticket.description.slice(0, 200)}...`
-                      : ticket.description}
-                  </p>
+                  <p className="tk-card-desc">{ticket.description}</p>
                 )}
 
                 {ticket.assignedTo && (
-                  <p className="muted">Assigned to: {ticket.assignedTo}</p>
+                  <p className="tk-card-date">
+                    🛠 Assigned to: {ticket.assignedTo.slice(0, 12)}
+                  </p>
                 )}
 
                 {/* Quick assign panel */}
                 {isAssignOpen && (
-                  <div style={{ marginTop: 8 }}>
-                    <label>Technician user id</label>
+                  <div className="tk-inline-form">
+                    <label className="tk-inline-form-label">Technician user id</label>
                     <input
-                      className="input"
+                      type="text"
+                      className="tk-input"
                       placeholder="Paste the technician's user id"
                       value={assignTechId}
                       onChange={(e) => setAssignTechId(e.target.value)}
                     />
-                    <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                      Tip: a "list technicians" endpoint is coming from Member 4 - until then, paste the user id from MongoDB.
+                    <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, marginBottom: 0 }}>
+                      Tip: a "list technicians" endpoint is coming from Member 4 — until then, paste the user id from MongoDB.
                     </p>
-                    <div className="row" style={{ marginTop: 8 }}>
+                    <div className="tk-inline-form-actions">
                       <button
-                        className="btn btn-primary"
+                        className="tk-btn tk-btn-primary"
                         type="button"
                         onClick={onConfirmAssign}
                         disabled={assigning || !assignTechId.trim()}
                       >
-                        {assigning ? "Assigning..." : "Confirm Assign"}
+                        {assigning ? "Assigning..." : "✅ Confirm Assign"}
                       </button>
                       <button
-                        className="btn btn-light"
+                        className="tk-btn tk-btn-light"
                         type="button"
                         onClick={onCancelAssign}
                         disabled={assigning}
@@ -238,17 +239,17 @@ const TicketListPage = () => {
                   </div>
                 )}
 
-                <div className="row booking-modern-actions">
-                  <Link className="btn btn-light" to={`/tickets/${ticket.id}`}>
-                    View Details
+                <div className="tk-card-actions">
+                  <Link className="tk-btn tk-btn-ghost" to={`/tickets/${ticket.id}`}>
+                    👁  View Details
                   </Link>
                   {canAssign && !isAssignOpen && (
                     <button
-                      className="btn btn-primary"
+                      className="tk-btn tk-btn-primary"
                       type="button"
                       onClick={() => onOpenAssign(ticket.id)}
                     >
-                      Quick Assign
+                      🛠 Quick Assign
                     </button>
                   )}
                 </div>

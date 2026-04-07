@@ -1,26 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAssignedTickets, updateTicketStatus } from "../../../api/ticketApi";
+import "../tickets.css";
 
-// Technician view: tickets that have been assigned to me.
-// Active queue at the top, finished work below.
-
-const statusClass = (status) => {
-  if (status === "ASSIGNED") return "status-pill is-pending";
-  if (status === "IN_PROGRESS") return "status-pill is-pending";
-  if (status === "RESOLVED") return "status-pill is-approved";
-  if (status === "CLOSED") return "status-pill is-approved";
-  if (status === "REJECTED") return "status-pill is-rejected";
-  return "status-pill";
+const STATUS_LABELS = {
+  ASSIGNED: "Assigned",
+  IN_PROGRESS: "In Progress",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+  REJECTED: "Rejected",
 };
 
-const statusLabel = (status) => {
-  if (status === "ASSIGNED") return "Assigned";
-  if (status === "IN_PROGRESS") return "In Progress";
-  if (status === "RESOLVED") return "Resolved";
-  if (status === "CLOSED") return "Closed";
-  if (status === "REJECTED") return "Rejected";
-  return status;
+const CATEGORY_META = {
+  ELECTRICAL:   { label: "Electrical",   icon: "⚡" },
+  NETWORK:      { label: "Network",      icon: "📡" },
+  FURNITURE:    { label: "Furniture",    icon: "🪑" },
+  IT_EQUIPMENT: { label: "IT Equipment", icon: "💻" },
+  PLUMBING:     { label: "Plumbing",     icon: "🚰" },
+  OTHER:        { label: "Other",        icon: "📌" },
 };
 
 const formatDate = (isoString) => {
@@ -35,9 +32,7 @@ const formatDate = (isoString) => {
 
 const parseErrorMessage = (err, fallback) => {
   const details = err?.response?.data?.details;
-  if (Array.isArray(details) && details.length > 0) {
-    return details[0];
-  }
+  if (Array.isArray(details) && details.length > 0) return details[0];
   return err?.response?.data?.message ?? fallback;
 };
 
@@ -47,7 +42,6 @@ const AssignedTicketsPage = () => {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
 
-  // For the inline resolve form
   const [resolveTargetId, setResolveTargetId] = useState("");
   const [resolveNotes, setResolveNotes] = useState("");
 
@@ -64,21 +58,14 @@ const AssignedTicketsPage = () => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchTickets();
-  }, [fetchTickets]);
+  useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
-  // Group tickets into "active" and "done" so the technician sees their
-  // current work first.
   const grouped = useMemo(() => {
     const active = [];
     const done = [];
     for (const ticket of tickets) {
-      if (ticket.status === "ASSIGNED" || ticket.status === "IN_PROGRESS") {
-        active.push(ticket);
-      } else {
-        done.push(ticket);
-      }
+      if (ticket.status === "ASSIGNED" || ticket.status === "IN_PROGRESS") active.push(ticket);
+      else done.push(ticket);
     }
     return { active, done };
   }, [tickets]);
@@ -132,61 +119,63 @@ const AssignedTicketsPage = () => {
     const isBusy = busyId === ticket.id;
     const canStart = ticket.status === "ASSIGNED";
     const canResolve = ticket.status === "IN_PROGRESS";
+    const cat = CATEGORY_META[ticket.category] ?? { label: ticket.category, icon: "📌" };
 
     return (
-      <article className="card booking-modern-card" key={ticket.id}>
-        <div className="spread">
+      <article className={`tk-card is-status-${ticket.status}`} key={ticket.id}>
+        <div className="tk-card-head">
           <div>
-            <h3>{ticket.title}</h3>
-            <p className="muted booking-date-line">
-              Reported {formatDate(ticket.createdAt)}
-            </p>
+            <h3 className="tk-card-title">{ticket.title}</h3>
+            <p className="tk-card-date">Reported {formatDate(ticket.createdAt)}</p>
           </div>
-          <span className={statusClass(ticket.status)}>
-            {statusLabel(ticket.status)}
+          <span className={`tk-pill is-${ticket.status}`}>
+            {STATUS_LABELS[ticket.status] ?? ticket.status}
           </span>
         </div>
 
-        <div className="booking-modern-meta">
-          <span>{ticket.category}</span>
-          <span>Priority: {ticket.priority}</span>
-          <span>{ticket.location || `Resource: ${ticket.resourceId ?? "-"}`}</span>
+        <div className="tk-card-meta">
+          <span className="tk-chip">
+            <span className="tk-chip-icon">{cat.icon}</span>
+            {cat.label}
+          </span>
+          <span className={`tk-chip is-prio-${ticket.priority}`}>
+            {ticket.priority}
+          </span>
+          <span className="tk-chip">
+            <span className="tk-chip-icon">📍</span>
+            {ticket.location || "Resource"}
+          </span>
         </div>
 
         {ticket.description && (
-          <p className="booking-modern-purpose">
-            {ticket.description.length > 200
-              ? `${ticket.description.slice(0, 200)}...`
-              : ticket.description}
-          </p>
+          <p className="tk-card-desc">{ticket.description}</p>
         )}
 
         {ticket.contactDetails && (
-          <p className="muted">Contact: {ticket.contactDetails}</p>
+          <p className="tk-card-date">📞 Contact: {ticket.contactDetails}</p>
         )}
 
-        {/* Resolve form */}
         {isResolveOpen && (
-          <div style={{ marginTop: 8 }}>
-            <label>Resolution notes</label>
+          <div className="tk-inline-form">
+            <label className="tk-inline-form-label">Resolution notes</label>
             <textarea
-              className="input"
+              className="tk-textarea"
               rows={3}
               value={resolveNotes}
               onChange={(e) => setResolveNotes(e.target.value)}
               placeholder="What did you do to fix it?"
             />
-            <div className="row" style={{ marginTop: 8 }}>
+            <div className="tk-inline-form-actions">
               <button
-                className="btn btn-primary"
+                className="tk-btn tk-btn-primary"
                 type="button"
                 onClick={onConfirmResolve}
                 disabled={isBusy || !resolveNotes.trim()}
               >
-                {isBusy ? "Saving..." : "Confirm Resolve"}
+                {isBusy ? "Saving..." : "✅ Confirm Resolve"}
               </button>
               <button
-                className="btn btn-light"
+                className="tk-btn tk-btn-light"
                 type="button"
                 onClick={onCancelResolve}
                 disabled={isBusy}
@@ -197,27 +186,27 @@ const AssignedTicketsPage = () => {
           </div>
         )}
 
-        <div className="row booking-modern-actions">
-          <Link className="btn btn-light" to={`/tickets/${ticket.id}`}>
-            View Details
+        <div className="tk-card-actions">
+          <Link className="tk-btn tk-btn-ghost" to={`/tickets/${ticket.id}`}>
+            👁  View Details
           </Link>
           {canStart && (
             <button
-              className="btn btn-primary"
+              className="tk-btn tk-btn-primary"
               type="button"
               onClick={() => onStartWork(ticket.id)}
               disabled={isBusy}
             >
-              {isBusy ? "Starting..." : "Start Work"}
+              {isBusy ? "Starting..." : "▶  Start Work"}
             </button>
           )}
           {canResolve && !isResolveOpen && (
             <button
-              className="btn btn-primary"
+              className="tk-btn tk-btn-primary"
               type="button"
               onClick={() => onOpenResolve(ticket.id)}
             >
-              Resolve
+              ✅ Resolve
             </button>
           )}
         </div>
@@ -226,49 +215,63 @@ const AssignedTicketsPage = () => {
   };
 
   return (
-    <section className="grid my-bookings-shell">
+    <section className="tk-page">
 
-      <div className="card bookings-hero">
-        <div className="spread">
+      {/* HERO */}
+      <div className="tk-hero">
+        <div className="tk-hero-top">
           <div>
-            <h2>My Queue</h2>
-            <p className="bookings-subtitle">
-              Tickets that have been assigned to you. Pick up open work and resolve in-progress items.
+            <h2 className="tk-hero-title">🛠 My Queue</h2>
+            <p className="tk-hero-sub">
+              Tickets assigned to you. Pick up open work and resolve in-progress items.
             </p>
           </div>
-          <div className="row">
-            <button className="btn btn-light" type="button" onClick={fetchTickets} disabled={loading}>
-              Refresh
+          <div className="tk-hero-actions">
+            <button className="tk-btn tk-btn-light" type="button" onClick={fetchTickets} disabled={loading}>
+              🔄 Refresh
             </button>
           </div>
         </div>
 
-        <div className="bookings-stats-grid">
-          <div className="bookings-stat-card">
-            <span className="bookings-stat-label">Active</span>
-            <strong>{grouped.active.length}</strong>
+        <div className="tk-stats">
+          <div className="tk-stat">
+            <div className="tk-stat-icon is-active">🔧</div>
+            <div className="tk-stat-body">
+              <span className="tk-stat-value">{grouped.active.length}</span>
+              <span className="tk-stat-label">Active</span>
+            </div>
           </div>
-          <div className="bookings-stat-card">
-            <span className="bookings-stat-label">Done</span>
-            <strong>{grouped.done.length}</strong>
+          <div className="tk-stat">
+            <div className="tk-stat-icon is-done">✅</div>
+            <div className="tk-stat-body">
+              <span className="tk-stat-value">{grouped.done.length}</span>
+              <span className="tk-stat-label">Done</span>
+            </div>
           </div>
         </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
-      {loading && <div className="card">Loading your queue...</div>}
+
+      {loading && (
+        <div className="tk-empty">
+          <div className="tk-empty-icon">⏳</div>
+          <p className="tk-empty-text">Loading your queue...</p>
+        </div>
+      )}
 
       {!loading && tickets.length === 0 && (
-        <div className="card bookings-empty">
-          <h3>No tickets assigned to you</h3>
-          <p>When an admin assigns you a ticket it will appear here.</p>
+        <div className="tk-empty">
+          <div className="tk-empty-icon">🎉</div>
+          <h3 className="tk-empty-title">No tickets assigned to you</h3>
+          <p className="tk-empty-text">When an admin assigns you a ticket it will appear here.</p>
         </div>
       )}
 
       {!loading && grouped.active.length > 0 && (
         <>
-          <h3 style={{ marginTop: 0 }}>Active</h3>
-          <div className="bookings-card-grid">
+          <h3 className="tk-section-heading">Active</h3>
+          <div className="tk-grid">
             {grouped.active.map(renderTicketCard)}
           </div>
         </>
@@ -276,8 +279,8 @@ const AssignedTicketsPage = () => {
 
       {!loading && grouped.done.length > 0 && (
         <>
-          <h3>Done</h3>
-          <div className="bookings-card-grid">
+          <h3 className="tk-section-heading">Done</h3>
+          <div className="tk-grid">
             {grouped.done.map(renderTicketCard)}
           </div>
         </>

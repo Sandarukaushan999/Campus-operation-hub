@@ -11,29 +11,28 @@ import {
   updateTicketStatus,
 } from "../../../api/ticketApi";
 import useAuth from "../../../hooks/useAuth";
+import "../tickets.css";
 
 // =====================================================================
-// Tiny formatting helpers (kept inline so the file is self contained).
+// Helpers
 // =====================================================================
 
-const statusClass = (status) => {
-  if (status === "OPEN") return "status-pill is-pending";
-  if (status === "ASSIGNED") return "status-pill is-pending";
-  if (status === "IN_PROGRESS") return "status-pill is-pending";
-  if (status === "RESOLVED") return "status-pill is-approved";
-  if (status === "CLOSED") return "status-pill is-approved";
-  if (status === "REJECTED") return "status-pill is-rejected";
-  return "status-pill";
+const STATUS_LABELS = {
+  OPEN: "Open",
+  ASSIGNED: "Assigned",
+  IN_PROGRESS: "In Progress",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+  REJECTED: "Rejected",
 };
 
-const statusLabel = (status) => {
-  if (status === "OPEN") return "Open";
-  if (status === "ASSIGNED") return "Assigned";
-  if (status === "IN_PROGRESS") return "In Progress";
-  if (status === "RESOLVED") return "Resolved";
-  if (status === "CLOSED") return "Closed";
-  if (status === "REJECTED") return "Rejected";
-  return status;
+const CATEGORY_META = {
+  ELECTRICAL:   { label: "Electrical",   icon: "⚡" },
+  NETWORK:      { label: "Network",      icon: "📡" },
+  FURNITURE:    { label: "Furniture",    icon: "🪑" },
+  IT_EQUIPMENT: { label: "IT Equipment", icon: "💻" },
+  PLUMBING:     { label: "Plumbing",     icon: "🚰" },
+  OTHER:        { label: "Other",        icon: "📌" },
 };
 
 const formatDateTime = (isoString) => {
@@ -49,21 +48,16 @@ const formatDateTime = (isoString) => {
 
 const parseErrorMessage = (err, fallback) => {
   const details = err?.response?.data?.details;
-  if (Array.isArray(details) && details.length > 0) {
-    return details[0];
-  }
+  if (Array.isArray(details) && details.length > 0) return details[0];
   return err?.response?.data?.message ?? fallback;
 };
 
-// Pull the filename out of an attachmentUrl like
-//   /api/tickets/abc/attachments/uuid.png
 const extractFilename = (url) => url.substring(url.lastIndexOf("/") + 1);
 
 
 // =====================================================================
-// Comment row - small inline component so the main page stays readable.
+// Comment row
 // =====================================================================
-
 const CommentItem = ({ comment, currentUserId, isAdmin, onEdit, onDelete }) => {
   const isAuthor = comment.userId === currentUserId;
   const canEdit = isAuthor;
@@ -101,66 +95,60 @@ const CommentItem = ({ comment, currentUserId, isAdmin, onEdit, onDelete }) => {
   };
 
   return (
-    <div className="card" style={{ padding: 12 }}>
-      <div className="spread">
-        <div>
-          <strong>{isAuthor ? "You" : comment.userId}</strong>
-          <span className="muted" style={{ marginLeft: 8, fontSize: 12 }}>
-            {formatDateTime(comment.createdAt)}
-            {comment.updatedAt !== comment.createdAt && " (edited)"}
-          </span>
-        </div>
+    <div className={`tk-comment${isAuthor ? " is-mine" : ""}`}>
+      <div className="tk-comment-head">
+        <span className="tk-comment-author">
+          {isAuthor ? "🙋 You" : `👤 ${comment.userId.slice(0, 8)}`}
+        </span>
+        <span className="tk-comment-date">
+          {formatDateTime(comment.createdAt)}
+          {comment.updatedAt !== comment.createdAt && (
+            <span className="tk-comment-edited"> · edited</span>
+          )}
+        </span>
       </div>
 
-      {!isEditing && (
-        <p style={{ marginTop: 8, marginBottom: 8, whiteSpace: "pre-wrap" }}>
-          {comment.text}
-        </p>
-      )}
+      {!isEditing && <p className="tk-comment-text">{comment.text}</p>}
 
       {isEditing && (
         <textarea
-          className="input"
+          className="tk-textarea"
           rows={3}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          style={{ marginTop: 8, marginBottom: 8 }}
+          style={{ marginBottom: 10 }}
         />
       )}
 
-      <div className="row">
+      <div className="tk-comment-actions">
         {!isEditing && canEdit && (
-          <button
-            type="button"
-            className="btn btn-light"
-            onClick={() => setIsEditing(true)}
-          >
-            Edit
+          <button type="button" className="tk-btn tk-btn-light" onClick={() => setIsEditing(true)}>
+            ✏  Edit
           </button>
         )}
         {!isEditing && canDelete && (
           <button
             type="button"
-            className="btn btn-danger"
+            className="tk-btn tk-btn-danger"
             onClick={onClickDelete}
             disabled={busy}
           >
-            {busy ? "Deleting..." : "Delete"}
+            {busy ? "Deleting..." : "🗑  Delete"}
           </button>
         )}
         {isEditing && (
           <>
             <button
               type="button"
-              className="btn btn-primary"
+              className="tk-btn tk-btn-primary"
               onClick={onSave}
               disabled={busy || !draft.trim()}
             >
-              {busy ? "Saving..." : "Save"}
+              {busy ? "Saving..." : "💾 Save"}
             </button>
             <button
               type="button"
-              className="btn btn-light"
+              className="tk-btn tk-btn-light"
               onClick={onCancel}
               disabled={busy}
             >
@@ -177,7 +165,6 @@ const CommentItem = ({ comment, currentUserId, isAdmin, onEdit, onDelete }) => {
 // =====================================================================
 // Main page
 // =====================================================================
-
 const TicketDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -185,28 +172,25 @@ const TicketDetailsPage = () => {
 
   const [ticket, setTicket] = useState(null);
   const [comments, setComments] = useState([]);
-  const [attachmentBlobs, setAttachmentBlobs] = useState([]); // [{filename, url}]
+  const [attachmentBlobs, setAttachmentBlobs] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  // New comment input
   const [newComment, setNewComment] = useState("");
 
-  // Inline forms toggled by the action buttons
   const [showResolveForm, setShowResolveForm] = useState(false);
   const [resolveNotes, setResolveNotes] = useState("");
 
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
-  // Load ticket + comments
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
       const [ticketData, commentData] = await Promise.all([
         getTicketById(id),
-        getComments(id).catch(() => []), // comments might fail if no access
+        getComments(id).catch(() => []),
       ]);
       setTicket(ticketData);
       setComments(commentData);
@@ -218,13 +202,9 @@ const TicketDetailsPage = () => {
     }
   }, [id]);
 
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // After the ticket loads, fetch each attachment as a blob URL so the
-  // <img> tag can show it (the protected GET needs the JWT, plain <img>
-  // does not send headers).
+  // Fetch attachments as blob URLs so the protected endpoint works with <img>.
   useEffect(() => {
     if (!ticket || !ticket.attachmentUrls || ticket.attachmentUrls.length === 0) {
       setAttachmentBlobs([]);
@@ -246,14 +226,12 @@ const TicketDetailsPage = () => {
           blobs.push({ filename, url: blobUrl });
           setAttachmentBlobs([...blobs]);
         } catch {
-          // Just skip the failing one - the user can still see the rest.
+          // Skip a single failing image
         }
       }
     };
-
     loadAll();
 
-    // Cleanup: revoke every blob URL we created so memory is freed.
     return () => {
       cancelled = true;
       blobs.forEach((b) => URL.revokeObjectURL(b.url));
@@ -261,49 +239,48 @@ const TicketDetailsPage = () => {
   }, [ticket]);
 
   if (loading) {
-    return <div className="card">Loading ticket...</div>;
+    return (
+      <section className="tk-page">
+        <div className="tk-empty">
+          <div className="tk-empty-icon">⏳</div>
+          <p className="tk-empty-text">Loading ticket...</p>
+        </div>
+      </section>
+    );
   }
 
   if (error && !ticket) {
     return (
-      <div className="card alert alert-error">
-        {error}
-        <div className="row" style={{ marginTop: 12 }}>
-          <Link className="btn btn-light" to="/tickets/my">Back to my tickets</Link>
+      <section className="tk-page">
+        <div className="tk-empty">
+          <div className="tk-empty-icon">⚠️</div>
+          <h3 className="tk-empty-title">Could not load ticket</h3>
+          <p className="tk-empty-text">{error}</p>
+          <div className="tk-empty-actions">
+            <Link className="tk-btn tk-btn-primary" to="/tickets/my">Back to my tickets</Link>
+          </div>
         </div>
-      </div>
+      </section>
     );
   }
 
-  if (!ticket) {
-    return null;
-  }
+  if (!ticket) return null;
 
-  // ----- role / permission flags used throughout the JSX -----
+  // Permission flags used to decide which buttons appear.
   const isAdmin = user?.role === "ADMIN";
   const isOwner = user?.id === ticket.createdBy;
   const isAssignee = user?.id === ticket.assignedTo;
 
-  // What buttons should appear in the workflow panel?
-  // Based on the same state machine that the backend enforces.
-  const canStartWork =
-    ticket.status === "ASSIGNED" && (isAssignee || isAdmin);
-  const canResolve =
-    ticket.status === "IN_PROGRESS" && (isAssignee || isAdmin);
-  const canReject =
-    isAdmin && ["OPEN", "ASSIGNED", "IN_PROGRESS"].includes(ticket.status);
-  const canClose =
-    ticket.status === "RESOLVED" && (isOwner || isAdmin);
-  const canReopen =
-    ticket.status === "RESOLVED" && (isOwner || isAdmin);
-  const canDelete =
-    isAdmin || (isOwner && ticket.status === "OPEN");
+  const canStartWork = ticket.status === "ASSIGNED" && (isAssignee || isAdmin);
+  const canResolve = ticket.status === "IN_PROGRESS" && (isAssignee || isAdmin);
+  const canReject = isAdmin && ["OPEN", "ASSIGNED", "IN_PROGRESS"].includes(ticket.status);
+  const canClose = ticket.status === "RESOLVED" && (isOwner || isAdmin);
+  const canReopen = ticket.status === "RESOLVED" && (isOwner || isAdmin);
+  const canDelete = isAdmin || (isOwner && ticket.status === "OPEN");
 
-  const noActions =
-    !canStartWork && !canResolve && !canReject && !canClose && !canReopen && !canDelete;
+  const noActions = !canStartWork && !canResolve && !canReject && !canClose && !canReopen && !canDelete;
 
-  // ----- handlers -----
-
+  // ---- handlers ----
   const moveStatus = async (status, payload = {}) => {
     setBusy(true);
     setError("");
@@ -385,155 +362,151 @@ const TicketDetailsPage = () => {
     }
   };
 
-  return (
-    <section className="grid">
+  const cat = CATEGORY_META[ticket.category] ?? { label: ticket.category, icon: "📌" };
 
-      {/* ---- Header card ---- */}
-      <div className="card">
-        <div className="spread">
+  return (
+    <section className="tk-page">
+
+      {/* HEADER */}
+      <div className="tk-detail-head">
+        <div className="tk-detail-title-row">
           <div>
-            <h2 style={{ marginBottom: 4 }}>{ticket.title}</h2>
-            <p className="muted">
+            <h2 className="tk-detail-title">{ticket.title}</h2>
+            <p className="tk-detail-sub">
               Reported {formatDateTime(ticket.createdAt)}
               {ticket.updatedAt !== ticket.createdAt &&
                 ` · last updated ${formatDateTime(ticket.updatedAt)}`}
             </p>
           </div>
-          <span className={statusClass(ticket.status)}>
-            {statusLabel(ticket.status)}
+          <span className={`tk-pill is-${ticket.status}`}>
+            {STATUS_LABELS[ticket.status] ?? ticket.status}
           </span>
         </div>
 
-        <div className="grid grid-2" style={{ marginTop: 12 }}>
-          <div>
-            <p className="muted" style={{ margin: 0 }}>Category</p>
-            <strong>{ticket.category}</strong>
+        <div className="tk-detail-info-grid">
+          <div className="tk-detail-info-item">
+            <span className="tk-detail-info-label">Category</span>
+            <span className="tk-detail-info-value">{cat.icon} {cat.label}</span>
           </div>
-          <div>
-            <p className="muted" style={{ margin: 0 }}>Priority</p>
-            <strong>{ticket.priority}</strong>
+          <div className="tk-detail-info-item">
+            <span className="tk-detail-info-label">Priority</span>
+            <span className="tk-detail-info-value">
+              <span className={`tk-chip is-prio-${ticket.priority}`}>{ticket.priority}</span>
+            </span>
           </div>
-          <div>
-            <p className="muted" style={{ margin: 0 }}>Where</p>
-            <strong>{ticket.location || `Resource ${ticket.resourceId ?? "-"}`}</strong>
+          <div className="tk-detail-info-item">
+            <span className="tk-detail-info-label">Where</span>
+            <span className="tk-detail-info-value">
+              📍 {ticket.location || `Resource ${ticket.resourceId ?? "-"}`}
+            </span>
           </div>
-          <div>
-            <p className="muted" style={{ margin: 0 }}>Contact</p>
-            <strong>{ticket.contactDetails}</strong>
+          <div className="tk-detail-info-item">
+            <span className="tk-detail-info-label">Contact</span>
+            <span className="tk-detail-info-value">{ticket.contactDetails}</span>
           </div>
-          <div>
-            <p className="muted" style={{ margin: 0 }}>Reported by</p>
-            <strong>{isOwner ? "You" : ticket.createdBy}</strong>
+          <div className="tk-detail-info-item">
+            <span className="tk-detail-info-label">Reported by</span>
+            <span className="tk-detail-info-value">{isOwner ? "🙋 You" : ticket.createdBy?.slice(0, 8)}</span>
           </div>
-          <div>
-            <p className="muted" style={{ margin: 0 }}>Assigned to</p>
-            <strong>{ticket.assignedTo ? (isAssignee ? "You" : ticket.assignedTo) : "Nobody yet"}</strong>
+          <div className="tk-detail-info-item">
+            <span className="tk-detail-info-label">Assigned to</span>
+            <span className="tk-detail-info-value">
+              {ticket.assignedTo
+                ? (isAssignee ? "🙋 You" : `🛠 ${ticket.assignedTo.slice(0, 8)}`)
+                : "Nobody yet"}
+            </span>
           </div>
         </div>
 
-        <hr />
-
-        <p style={{ whiteSpace: "pre-wrap" }}>{ticket.description}</p>
+        <div className="tk-detail-description">{ticket.description}</div>
 
         {ticket.resolutionNotes && (
-          <div className="alert alert-info booking-inline-alert">
-            <strong>Resolution: </strong>{ticket.resolutionNotes}
+          <div className="tk-detail-callout is-resolution">
+            <strong>✅ Resolution: </strong>{ticket.resolutionNotes}
           </div>
         )}
 
         {ticket.rejectionReason && (
-          <div className="alert alert-error booking-inline-alert">
-            <strong>Rejected: </strong>{ticket.rejectionReason}
+          <div className="tk-detail-callout is-rejection">
+            <strong>❌ Rejected: </strong>{ticket.rejectionReason}
           </div>
         )}
       </div>
 
-      {/* ---- Attachment gallery ---- */}
+      {/* ATTACHMENTS */}
       {ticket.attachmentUrls && ticket.attachmentUrls.length > 0 && (
-        <div className="card">
-          <h3>Attachments</h3>
-          <div className="row" style={{ flexWrap: "wrap" }}>
+        <div className="tk-section">
+          <h3 className="tk-section-title">📷 Attachments</h3>
+          <div className="tk-gallery">
             {attachmentBlobs.map((b) => (
-              <a key={b.filename} href={b.url} target="_blank" rel="noreferrer">
-                <img
-                  src={b.url}
-                  alt={b.filename}
-                  style={{
-                    width: 160,
-                    height: 160,
-                    objectFit: "cover",
-                    borderRadius: 8,
-                    border: "1px solid #ddd",
-                  }}
-                />
+              <a key={b.filename} className="tk-gallery-item" href={b.url} target="_blank" rel="noreferrer">
+                <img src={b.url} alt={b.filename} />
               </a>
             ))}
             {attachmentBlobs.length < ticket.attachmentUrls.length && (
-              <p className="muted">Loading {ticket.attachmentUrls.length - attachmentBlobs.length} more...</p>
+              <span className="tk-gallery-loading">
+                Loading {ticket.attachmentUrls.length - attachmentBlobs.length} more...
+              </span>
             )}
           </div>
         </div>
       )}
 
-      {/* ---- Workflow actions ---- */}
+      {/* ACTIONS */}
       {!noActions && (
-        <div className="card">
-          <h3>Actions</h3>
-          {error && <div className="alert alert-error">{error}</div>}
+        <div className="tk-section">
+          <h3 className="tk-section-title">⚙️ Actions</h3>
+          {error && <div className="alert alert-error" style={{ marginBottom: 12 }}>{error}</div>}
 
-          <div className="row" style={{ flexWrap: "wrap" }}>
+          <div className="tk-action-panel">
             {canStartWork && (
-              <button className="btn btn-primary" type="button" onClick={onStartWork} disabled={busy}>
-                Start Work
+              <button className="tk-btn tk-btn-primary" type="button" onClick={onStartWork} disabled={busy}>
+                ▶  Start Work
               </button>
             )}
-
             {canResolve && !showResolveForm && (
-              <button className="btn btn-primary" type="button" onClick={() => setShowResolveForm(true)} disabled={busy}>
-                Resolve
+              <button className="tk-btn tk-btn-primary" type="button" onClick={() => setShowResolveForm(true)} disabled={busy}>
+                ✅ Resolve
               </button>
             )}
-
             {canReject && !showRejectForm && (
-              <button className="btn btn-danger" type="button" onClick={() => setShowRejectForm(true)} disabled={busy}>
-                Reject
+              <button className="tk-btn tk-btn-danger" type="button" onClick={() => setShowRejectForm(true)} disabled={busy}>
+                ❌ Reject
               </button>
             )}
-
             {canClose && (
-              <button className="btn btn-primary" type="button" onClick={onClose} disabled={busy}>
-                Close
+              <button className="tk-btn tk-btn-primary" type="button" onClick={onClose} disabled={busy}>
+                📕 Close
               </button>
             )}
-
             {canReopen && (
-              <button className="btn btn-light" type="button" onClick={onReopen} disabled={busy}>
-                Re-open
+              <button className="tk-btn tk-btn-light" type="button" onClick={onReopen} disabled={busy}>
+                🔄 Re-open
               </button>
             )}
-
             {canDelete && (
-              <button className="btn btn-danger" type="button" onClick={onDeleteTicket} disabled={busy}>
-                Delete
+              <button className="tk-btn tk-btn-danger" type="button" onClick={onDeleteTicket} disabled={busy}>
+                🗑  Delete
               </button>
             )}
           </div>
 
           {showResolveForm && (
-            <div style={{ marginTop: 12 }}>
-              <label>What was done to fix it?</label>
+            <div className="tk-inline-form">
+              <label className="tk-inline-form-label">What was done to fix it?</label>
               <textarea
-                className="input"
+                className="tk-textarea"
                 rows={3}
                 value={resolveNotes}
                 onChange={(e) => setResolveNotes(e.target.value)}
+                placeholder="Describe the fix..."
               />
-              <div className="row" style={{ marginTop: 8 }}>
-                <button className="btn btn-primary" type="button" onClick={onConfirmResolve} disabled={busy}>
-                  {busy ? "Saving..." : "Confirm Resolve"}
+              <div className="tk-inline-form-actions">
+                <button className="tk-btn tk-btn-primary" type="button" onClick={onConfirmResolve} disabled={busy}>
+                  {busy ? "Saving..." : "✅ Confirm Resolve"}
                 </button>
                 <button
-                  className="btn btn-light"
+                  className="tk-btn tk-btn-light"
                   type="button"
                   onClick={() => { setShowResolveForm(false); setResolveNotes(""); }}
                   disabled={busy}
@@ -545,20 +518,21 @@ const TicketDetailsPage = () => {
           )}
 
           {showRejectForm && (
-            <div style={{ marginTop: 12 }}>
-              <label>Reason for rejecting</label>
+            <div className="tk-inline-form">
+              <label className="tk-inline-form-label">Reason for rejecting</label>
               <textarea
-                className="input"
+                className="tk-textarea"
                 rows={3}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Why are you rejecting this ticket?"
               />
-              <div className="row" style={{ marginTop: 8 }}>
-                <button className="btn btn-danger" type="button" onClick={onConfirmReject} disabled={busy}>
-                  {busy ? "Saving..." : "Confirm Reject"}
+              <div className="tk-inline-form-actions">
+                <button className="tk-btn tk-btn-danger" type="button" onClick={onConfirmReject} disabled={busy}>
+                  {busy ? "Saving..." : "❌ Confirm Reject"}
                 </button>
                 <button
-                  className="btn btn-light"
+                  className="tk-btn tk-btn-light"
                   type="button"
                   onClick={() => { setShowRejectForm(false); setRejectReason(""); }}
                   disabled={busy}
@@ -571,50 +545,50 @@ const TicketDetailsPage = () => {
         </div>
       )}
 
-      {/* ---- Comments thread ---- */}
-      <div className="card">
-        <h3>Comments</h3>
+      {/* COMMENTS */}
+      <div className="tk-section">
+        <h3 className="tk-section-title">💬 Comments ({comments.length})</h3>
 
-        {comments.length === 0 && <p className="muted">No comments yet.</p>}
+        {comments.length === 0 && (
+          <p className="tk-comment-empty">No comments yet. Be the first to add one.</p>
+        )}
 
-        <div className="grid">
-          {comments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              currentUserId={user?.id}
-              isAdmin={isAdmin}
-              onEdit={onEditComment}
-              onDelete={onDeleteComment}
-            />
-          ))}
-        </div>
-
-        <hr />
-
-        <div className="form-field">
-          <label>Add a comment</label>
-          <textarea
-            className="input"
-            rows={3}
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Write a comment..."
+        {comments.map((comment) => (
+          <CommentItem
+            key={comment.id}
+            comment={comment}
+            currentUserId={user?.id}
+            isAdmin={isAdmin}
+            onEdit={onEditComment}
+            onDelete={onDeleteComment}
           />
+        ))}
+
+        <div className="tk-comment-form">
+          <div className="tk-field" style={{ marginBottom: 10 }}>
+            <label className="tk-field-label">Add a comment</label>
+            <textarea
+              className="tk-textarea"
+              rows={3}
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Write a comment..."
+            />
+          </div>
+          <button
+            className="tk-btn tk-btn-primary"
+            type="button"
+            onClick={onAddComment}
+            disabled={!newComment.trim()}
+          >
+            💬 Post Comment
+          </button>
         </div>
-        <button
-          className="btn btn-primary"
-          type="button"
-          onClick={onAddComment}
-          disabled={!newComment.trim()}
-        >
-          Post Comment
-        </button>
       </div>
 
-      <div className="row">
-        <Link className="btn btn-light" to="/tickets/my">
-          Back to my tickets
+      <div>
+        <Link className="tk-btn tk-btn-light" to="/tickets/my">
+          ← Back to my tickets
         </Link>
       </div>
     </section>
