@@ -2,24 +2,15 @@
 # Smart Campus Hub - one command to start everything
 #   docker compose up --build
 #
-# This file starts three containers and links them together:
-#   - mongodb   : the database
+# This file starts two containers and links them together:
 #   - backend   : Spring Boot REST API on port 8080
 #   - frontend  : React/Vite dev server on port 5173
+#
+# The MongoDB database is the team's shared Atlas cluster
+# (see MONGO_URI in your .env file). No local Mongo container.
 # =========================================================
 
 services:
-
-  # ---------- MongoDB ----------
-  mongodb:
-    image: mongo:7
-    container_name: campus-mongodb
-    ports:
-      - "27017:27017"
-    volumes:
-      # Keeps the database data even after the container is removed
-      - campus_mongo_data:/data/db
-    restart: unless-stopped
 
   # ---------- Spring Boot backend ----------
   backend:
@@ -27,16 +18,12 @@ services:
     container_name: campus-backend
     ports:
       - "8080:8080"
-    depends_on:
-      - mongodb
     environment:
       # Spring Boot picks env vars over application.properties automatically.
-      # We point at the local mongo container, NOT Atlas.
-      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/smartcampusdb
-
-      # JWT settings - read from the .env file at the project root
+      # All values come from the .env file at the project root.
+      SPRING_DATA_MONGODB_URI: ${MONGO_URI}
       APP_SECURITY_JWT_SECRET: ${JWT_SECRET}
-      APP_SECURITY_JWT_EXPIRATION_SECONDS: 86400
+      APP_SECURITY_JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS}
 
       # Where Module C will save uploaded ticket images.
       # The folder below is mounted as a host volume so files survive restarts.
@@ -64,7 +51,3 @@ services:
       # ...but keep node_modules from inside the container (host has none)
       - /app/node_modules
     restart: unless-stopped
-
-# Named volume for MongoDB data
-volumes:
-  campus_mongo_data:
