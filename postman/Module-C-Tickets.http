@@ -1,0 +1,290 @@
+### =====================================================================
+### Smart Campus Hub - Module C (Tickets)
+### VS Code REST Client format - install the "REST Client" extension
+###
+### Workflow:
+###   1. Run the Login request first - the response gives you the token.
+###   2. Copy the token into the @token variable below.
+###   3. Optionally fill @ticketId and @technicianId after creating them.
+### =====================================================================
+
+@baseUrl = http://localhost:8080
+@email = admin@campus.lk
+@password = Test1234
+
+# Paste from the Login response
+@token = PASTE_JWT_TOKEN_HERE
+
+# Paste after creating a ticket / promoting a technician in MongoDB
+@ticketId = PASTE_TICKET_ID_HERE
+@technicianId = PASTE_TECHNICIAN_USER_ID_HERE
+@commentId = PASTE_COMMENT_ID_HERE
+
+
+### -------------------------------------------------------------------
+### 1. Login - copy "data.token" from the response into @token above
+### -------------------------------------------------------------------
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+
+### -------------------------------------------------------------------
+### 2. Create a ticket (no attachments) - simplest happy path
+### -------------------------------------------------------------------
+POST {{baseUrl}}/api/tickets
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----RestClientBoundary
+
+------RestClientBoundary
+Content-Disposition: form-data; name="title"
+
+Projector dead
+------RestClientBoundary
+Content-Disposition: form-data; name="description"
+
+Lamp burned out during the morning lecture
+------RestClientBoundary
+Content-Disposition: form-data; name="category"
+
+IT_EQUIPMENT
+------RestClientBoundary
+Content-Disposition: form-data; name="priority"
+
+HIGH
+------RestClientBoundary
+Content-Disposition: form-data; name="contactDetails"
+
+admin@campus.lk
+------RestClientBoundary
+Content-Disposition: form-data; name="location"
+
+Block A, Lab 3
+------RestClientBoundary--
+
+
+### -------------------------------------------------------------------
+### 3. List my tickets
+### -------------------------------------------------------------------
+GET {{baseUrl}}/api/tickets/my
+Authorization: Bearer {{token}}
+
+
+### -------------------------------------------------------------------
+### 4. List tickets assigned to me (technician view)
+### -------------------------------------------------------------------
+GET {{baseUrl}}/api/tickets/assigned
+Authorization: Bearer {{token}}
+
+
+### -------------------------------------------------------------------
+### 5. List ALL tickets (admin only)
+### -------------------------------------------------------------------
+GET {{baseUrl}}/api/tickets
+Authorization: Bearer {{token}}
+
+
+### -------------------------------------------------------------------
+### 5b. List ALL tickets filtered by status
+### -------------------------------------------------------------------
+GET {{baseUrl}}/api/tickets?status=OPEN
+Authorization: Bearer {{token}}
+
+
+### -------------------------------------------------------------------
+### 6. Get a single ticket by id
+### -------------------------------------------------------------------
+GET {{baseUrl}}/api/tickets/{{ticketId}}
+Authorization: Bearer {{token}}
+
+
+### -------------------------------------------------------------------
+### 7. Admin assigns a technician (OPEN -> ASSIGNED)
+### -------------------------------------------------------------------
+PATCH {{baseUrl}}/api/tickets/{{ticketId}}/assign
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": "{{technicianId}}"
+}
+
+
+### -------------------------------------------------------------------
+### 8. Technician starts work (ASSIGNED -> IN_PROGRESS)
+### -------------------------------------------------------------------
+PATCH {{baseUrl}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+
+### -------------------------------------------------------------------
+### 9. Technician marks resolved (IN_PROGRESS -> RESOLVED)
+### Resolution notes are required.
+### -------------------------------------------------------------------
+PATCH {{baseUrl}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "RESOLVED",
+  "resolutionNotes": "Replaced the projector lamp"
+}
+
+
+### -------------------------------------------------------------------
+### 10. Owner closes the ticket (RESOLVED -> CLOSED)
+### -------------------------------------------------------------------
+PATCH {{baseUrl}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "CLOSED"
+}
+
+
+### -------------------------------------------------------------------
+### 11. Owner re-opens the ticket (RESOLVED -> IN_PROGRESS)
+### Use this INSTEAD of #10 if the issue is not really fixed.
+### -------------------------------------------------------------------
+PATCH {{baseUrl}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+
+### -------------------------------------------------------------------
+### 12. Admin rejects a ticket - reason is required
+### -------------------------------------------------------------------
+PATCH {{baseUrl}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "REJECTED",
+  "rejectionReason": "Duplicate of an earlier ticket"
+}
+
+
+### -------------------------------------------------------------------
+### 13. Delete a ticket (owner-OPEN-only or admin always)
+### -------------------------------------------------------------------
+DELETE {{baseUrl}}/api/tickets/{{ticketId}}
+Authorization: Bearer {{token}}
+
+
+### -------------------------------------------------------------------
+### 14. Download an attachment - replace FILENAME with the real one
+### from the ticket's attachmentUrls list
+### -------------------------------------------------------------------
+GET {{baseUrl}}/api/tickets/{{ticketId}}/attachments/REPLACE_FILENAME.png
+Authorization: Bearer {{token}}
+
+
+### =====================================================================
+### Comments
+### =====================================================================
+
+### List comments on a ticket
+GET {{baseUrl}}/api/tickets/{{ticketId}}/comments
+Authorization: Bearer {{token}}
+
+
+### Add a comment
+POST {{baseUrl}}/api/tickets/{{ticketId}}/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Looking into this now."
+}
+
+
+### Edit a comment (author only)
+PUT {{baseUrl}}/api/tickets/{{ticketId}}/comments/{{commentId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Updated - I have ordered a new lamp."
+}
+
+
+### Delete a comment (author or admin)
+DELETE {{baseUrl}}/api/tickets/{{ticketId}}/comments/{{commentId}}
+Authorization: Bearer {{token}}
+
+
+### =====================================================================
+### Negative tests - useful when writing the test evidence section of
+### the report. These SHOULD fail with the noted status code.
+### =====================================================================
+
+### Should fail 401 - no token
+GET {{baseUrl}}/api/tickets/my
+
+
+### Should fail 403 - normal user cannot list ALL tickets
+### (run after logging in as a USER, not ADMIN)
+GET {{baseUrl}}/api/tickets
+Authorization: Bearer {{token}}
+
+
+### Should fail 400 - missing title
+POST {{baseUrl}}/api/tickets
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----RestClientBoundary
+
+------RestClientBoundary
+Content-Disposition: form-data; name="description"
+
+No title set
+------RestClientBoundary
+Content-Disposition: form-data; name="category"
+
+OTHER
+------RestClientBoundary
+Content-Disposition: form-data; name="priority"
+
+LOW
+------RestClientBoundary
+Content-Disposition: form-data; name="contactDetails"
+
+x@y.com
+------RestClientBoundary
+Content-Disposition: form-data; name="location"
+
+somewhere
+------RestClientBoundary--
+
+
+### Should fail 400 - resolve without notes
+PATCH {{baseUrl}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "RESOLVED"
+}
+
+
+### Should fail 400 - reject without reason
+PATCH {{baseUrl}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "REJECTED"
+}

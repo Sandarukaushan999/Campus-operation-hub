@@ -1,0 +1,345 @@
+{
+  "info": {
+    "_postman_id": "smart-campus-tickets-c-2026",
+    "name": "Smart Campus Hub - Module C (Tickets)",
+    "description": "Postman collection for Module C (Maintenance & Incident Ticketing).\n\nMember 3 - IT3030 PAF Assignment 2026\n\n## How to use\n1. In Postman, set the collection variables (top-right) before running:\n   - `baseUrl` = http://localhost:8080\n   - `email` and `password` for an existing user (admin recommended)\n2. Run **Auth > Login** first - it stores the JWT in the `token` variable.\n3. All other requests automatically use that token.\n4. After **Tickets > Create ticket (no attachments)** runs, the new ticket id is\n   auto-saved to `ticketId` so the rest of the requests work without copy/paste.\n\n## Workflow walkthrough\n1. Auth > Login (admin)\n2. Tickets > Create ticket\n3. Tickets > Assign technician  (paste a real technicianId in the body)\n4. Tickets > Update status -> IN_PROGRESS\n5. Tickets > Update status -> RESOLVED\n6. Tickets > Update status -> CLOSED\n7. Comments > Add comment\n8. Comments > Edit comment\n9. Comments > Delete comment\n10. Tickets > Delete ticket (admin)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",      "value": "http://localhost:8080" },
+    { "key": "email",        "value": "admin@campus.lk" },
+    { "key": "password",     "value": "Test1234" },
+    { "key": "token",        "value": "" },
+    { "key": "ticketId",     "value": "" },
+    { "key": "commentId",    "value": "" },
+    { "key": "technicianId", "value": "PASTE_REAL_TECHNICIAN_USER_ID_HERE" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Save the JWT for every other request to use",
+                  "const body = pm.response.json();",
+                  "if (body && body.data && body.data.token) {",
+                  "  pm.collectionVariables.set('token', body.data.token);",
+                  "  console.log('Token saved');",
+                  "} else {",
+                  "  console.log('No token in response - check credentials');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Tickets",
+      "item": [
+        {
+          "name": "Create ticket (no attachments)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.data && body.data.id) {",
+                  "  pm.collectionVariables.set('ticketId', body.data.id);",
+                  "  console.log('Saved ticketId =', body.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title",          "value": "Projector dead",                              "type": "text" },
+                { "key": "description",    "value": "Lamp burned out during the morning lecture",  "type": "text" },
+                { "key": "category",       "value": "IT_EQUIPMENT",                                "type": "text" },
+                { "key": "priority",       "value": "HIGH",                                        "type": "text" },
+                { "key": "contactDetails", "value": "{{email}}",                                   "type": "text" },
+                { "key": "location",       "value": "Block A, Lab 3",                              "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/tickets", "host": ["{{baseUrl}}"], "path": ["api","tickets"] }
+          }
+        },
+
+        {
+          "name": "Create ticket (with image attachments)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title",          "value": "Broken chair",     "type": "text" },
+                { "key": "description",   "value": "Leg is missing",    "type": "text" },
+                { "key": "category",      "value": "FURNITURE",         "type": "text" },
+                { "key": "priority",      "value": "LOW",               "type": "text" },
+                { "key": "contactDetails","value": "{{email}}",         "type": "text" },
+                { "key": "location",      "value": "Lab 3",             "type": "text" },
+                { "key": "attachments",   "type": "file", "src": [],
+                  "description": "Pick up to 3 PNG/JPEG/WEBP files (each <=2 MB)" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/tickets", "host": ["{{baseUrl}}"], "path": ["api","tickets"] }
+          }
+        },
+
+        {
+          "name": "Get my tickets",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/tickets/my", "host": ["{{baseUrl}}"], "path": ["api","tickets","my"] }
+          }
+        },
+
+        {
+          "name": "Get assigned tickets (technician)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/tickets/assigned", "host": ["{{baseUrl}}"], "path": ["api","tickets","assigned"] }
+          }
+        },
+
+        {
+          "name": "Get all tickets (admin, optional status)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets?status=OPEN",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","tickets"],
+              "query": [{ "key": "status", "value": "OPEN" }]
+            }
+          }
+        },
+
+        {
+          "name": "Get ticket by id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}"] }
+          }
+        },
+
+        {
+          "name": "Assign technician (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"technicianId\": \"{{technicianId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/assign", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}","assign"] }
+          }
+        },
+
+        {
+          "name": "Update status -> IN_PROGRESS",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/status", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}","status"] }
+          }
+        },
+
+        {
+          "name": "Update status -> RESOLVED (with notes)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RESOLVED\",\n  \"resolutionNotes\": \"Replaced the projector lamp\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/status", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}","status"] }
+          }
+        },
+
+        {
+          "name": "Update status -> CLOSED",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CLOSED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/status", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}","status"] }
+          }
+        },
+
+        {
+          "name": "Update status -> REJECTED (admin, with reason)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"REJECTED\",\n  \"rejectionReason\": \"Duplicate of ticket abc\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/status", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}","status"] }
+          }
+        },
+
+        {
+          "name": "Re-open RESOLVED -> IN_PROGRESS",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/status", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}","status"] }
+          }
+        },
+
+        {
+          "name": "Delete ticket",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}"] }
+          }
+        },
+
+        {
+          "name": "Download attachment (paste filename)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/attachments/PASTE_FILENAME.png",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","tickets","{{ticketId}}","attachments","PASTE_FILENAME.png"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "List comments on a ticket",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/comments", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}","comments"] }
+          }
+        },
+
+        {
+          "name": "Add comment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.data && body.data.id) {",
+                  "  pm.collectionVariables.set('commentId', body.data.id);",
+                  "  console.log('Saved commentId =', body.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Looking into this now.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/comments", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}","comments"] }
+          }
+        },
+
+        {
+          "name": "Edit comment (author only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Updated - I have ordered a new lamp.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/comments/{{commentId}}", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}","comments","{{commentId}}"] }
+          }
+        },
+
+        {
+          "name": "Delete comment (author or admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/comments/{{commentId}}", "host": ["{{baseUrl}}"], "path": ["api","tickets","{{ticketId}}","comments","{{commentId}}"] }
+          }
+        }
+      ]
+    }
+  ]
+}

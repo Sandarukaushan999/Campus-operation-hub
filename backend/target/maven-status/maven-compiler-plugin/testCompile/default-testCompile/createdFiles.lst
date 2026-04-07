@@ -1,1 +1,5 @@
-com\campus\SmartCampusApplicationTests.class
+com/campus/modules/tickets/service/TicketServiceImplTest.class
+com/campus/modules/tickets/service/TicketServiceImplTest$CreateTicket.class
+com/campus/modules/tickets/service/TicketServiceImplTest$DeleteTicket.class
+com/campus/modules/tickets/service/TicketServiceImplTest$UpdateStatus.class
+com/campus/modules/tickets/service/TicketServiceImplTest$AssignTicket.class
