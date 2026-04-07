@@ -18,6 +18,12 @@ const Navbar = () => {
         {isAuthenticated && <Link to="/resources">Resources</Link>}
         {isAuthenticated && <Link to="/bookings/my">My Bookings</Link>}
         {isAuthenticated && user?.role === "ADMIN" && <Link to="/bookings">All Bookings</Link>}
+        {/* Module C - tickets */}
+        {isAuthenticated && <Link to="/tickets/my">My Tickets</Link>}
+        {isAuthenticated && (user?.role === "TECHNICIAN" || user?.role === "ADMIN") && (
+          <Link to="/tickets/assigned">Assigned</Link>
+        )}
+        {isAuthenticated && user?.role === "ADMIN" && <Link to="/tickets">All Tickets</Link>}
       </div>
       <div className="row">
         {isAuthenticated ? (

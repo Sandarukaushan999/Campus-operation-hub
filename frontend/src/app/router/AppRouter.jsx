@@ -10,6 +10,12 @@ import MyBookingsPage from "../../features/bookings/pages/MyBookingsPage";
 import BookingListPage from "../../features/bookings/pages/BookingListPage";
 import CreateBookingPage from "../../features/bookings/pages/CreateBookingPage";
 import BookingDetailsPage from "../../features/bookings/pages/BookingDetailsPage";
+// Module C - tickets
+import MyTicketsPage from "../../features/tickets/pages/MyTicketsPage";
+import CreateTicketPage from "../../features/tickets/pages/CreateTicketPage";
+import TicketDetailsPage from "../../features/tickets/pages/TicketDetailsPage";
+import TicketListPage from "../../features/tickets/pages/TicketListPage";
+import AssignedTicketsPage from "../../features/tickets/pages/AssignedTicketsPage";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -75,6 +81,20 @@ const AppRouter = () => (
         element={
           <AdminRoute>
             <BookingListPage />
+          </AdminRoute>
+        }
+      />
+
+      {/* Module C - tickets */}
+      <Route path="tickets/my" element={<MyTicketsPage />} />
+      <Route path="tickets/create" element={<CreateTicketPage />} />
+      <Route path="tickets/assigned" element={<AssignedTicketsPage />} />
+      <Route path="tickets/:id" element={<TicketDetailsPage />} />
+      <Route
+        path="tickets"
+        element={
+          <AdminRoute>
+            <TicketListPage />
           </AdminRoute>
         }
       />
