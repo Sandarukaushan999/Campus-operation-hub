@@ -1,0 +1,70 @@
+# =========================================================
+# Smart Campus Hub - one command to start everything
+#   docker compose up --build
+#
+# This file starts three containers and links them together:
+#   - mongodb   : the database
+#   - backend   : Spring Boot REST API on port 8080
+#   - frontend  : React/Vite dev server on port 5173
+# =========================================================
+
+services:
+
+  # ---------- MongoDB ----------
+  mongodb:
+    image: mongo:7
+    container_name: campus-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      # Keeps the database data even after the container is removed
+      - campus_mongo_data:/data/db
+    restart: unless-stopped
+
+  # ---------- Spring Boot backend ----------
+  backend:
+    build: ./backend
+    container_name: campus-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+    environment:
+      # Spring Boot picks env vars over application.properties automatically.
+      # We point at the local mongo container, NOT Atlas.
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/smartcampusdb
+
+      # JWT settings - read from the .env file at the project root
+      APP_SECURITY_JWT_SECRET: ${JWT_SECRET}
+      APP_SECURITY_JWT_EXPIRATION_SECONDS: 86400
+
+      # Where Module C will save uploaded ticket images.
+      # The folder below is mounted as a host volume so files survive restarts.
+      APP_STORAGE_UPLOAD_DIR: /app/uploads/tickets
+    volumes:
+      # Keep uploaded ticket images on the host machine, not inside the container
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+
+  # ---------- React (Vite) frontend ----------
+  frontend:
+    build: ./frontend
+    container_name: campus-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      # Needed so Vite hot reload sees file changes when the source folder
+      # is mounted from a Windows host.
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      # Mount the source so code changes show up live without rebuilding
+      - ./frontend:/app
+      # ...but keep node_modules from inside the container (host has none)
+      - /app/node_modules
+    restart: unless-stopped
+
+# Named volume for MongoDB data
+volumes:
+  campus_mongo_data:

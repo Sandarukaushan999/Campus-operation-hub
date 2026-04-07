@@ -1,0 +1,164 @@
+# =========================================================
+# Smart Campus Hub - Project root .gitignore
+# Covers: Java/Spring Boot (Maven + Gradle), Node/React/Vite,
+#         Docker, IDEs, OS junk, secrets, uploads.
+# =========================================================
+
+
+# ---------- Claude Code workspace ----------
+.claude/
+
+
+# ---------- Secrets / environment ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.keystore
+secrets/
+credentials.json
+
+
+# ---------- Ticket image uploads (Module C) ----------
+uploads/
+backend/uploads/
+
+
+# ---------- Java / Maven ----------
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+dependency-reduced-pom.xml
+
+
+# ---------- Java / Gradle ----------
+.gradle/
+build/
+**/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+.gradletasknamecache
+
+
+# ---------- Spring Boot ----------
+HELP.md
+spring-shell.log
+application-local.properties
+application-local.yml
+
+
+# ---------- Node / npm / pnpm / yarn ----------
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-integrity
+
+
+# ---------- Vite / React build output ----------
+dist/
+**/dist/
+.vite/
+**/.vite/
+*.local
+
+
+# ---------- Test coverage ----------
+coverage/
+**/coverage/
+*.lcov
+.nyc_output/
+
+
+# ---------- Logs ----------
+logs/
+*.log
+boot-err.log
+boot-out.log
+run-err.log
+run-out.log
+
+
+# ---------- Docker ----------
+docker-compose.override.yml
+.docker/
+
+
+# ---------- IntelliJ IDEA ----------
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+
+# ---------- Eclipse / STS ----------
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+
+# ---------- VS Code ----------
+.vscode/
+*.code-workspace
+
+
+# ---------- NetBeans ----------
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+
+# ---------- Operating system junk ----------
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+.Trash-*
+
+
+# ---------- Misc ----------
+*.bak
+*.swp
+*.swo
+*.tmp
+.cache/
+tmp/

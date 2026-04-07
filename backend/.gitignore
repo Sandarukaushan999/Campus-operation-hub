@@ -35,3 +35,12 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Maven ###
+target/
+
+### Module C - ticket image uploads (saved to disk, never commit them) ###
+uploads/
+
+### Local logs ###
+*.log
