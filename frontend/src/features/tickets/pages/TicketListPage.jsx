@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { getUsers } from "../../../api/userApi";
 import { assignTicket, getAllTickets } from "../../../api/ticketApi";
 import "../tickets.css";
 
@@ -48,6 +49,9 @@ const TicketListPage = () => {
   const [assignTechId, setAssignTechId] = useState("");
   const [assigning, setAssigning] = useState(false);
 
+  const [technicians, setTechnicians] = useState([]);
+  const [techLoading, setTechLoading] = useState(false);
+
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
@@ -63,6 +67,24 @@ const TicketListPage = () => {
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
+  const fetchTechnicians = useCallback(async () => {
+    setTechLoading(true);
+    try {
+      const users = await getUsers();
+      const eligible = (users ?? []).filter((u) => u?.role === "TECHNICIAN" || u?.role === "ADMIN");
+      eligible.sort((a, b) =>
+        String(a.fullName ?? "").localeCompare(String(b.fullName ?? ""), undefined, { sensitivity: "base" }),
+      );
+      setTechnicians(eligible);
+    } catch {
+      setTechnicians([]);
+    } finally {
+      setTechLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchTechnicians(); }, [fetchTechnicians]);
+
   const visibleTickets = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return tickets;
@@ -75,6 +97,9 @@ const TicketListPage = () => {
   const onOpenAssign = (ticketId) => {
     setAssignTargetId(ticketId);
     setAssignTechId("");
+    if (technicians.length === 0 && !techLoading) {
+      fetchTechnicians();
+    }
   };
 
   const onCancelAssign = () => {
@@ -84,7 +109,7 @@ const TicketListPage = () => {
 
   const onConfirmAssign = async () => {
     if (!assignTechId.trim()) {
-      setError("Enter a technician user id");
+      setError("Select a technician");
       return;
     }
     setAssigning(true);
@@ -207,17 +232,30 @@ const TicketListPage = () => {
                 {/* Quick assign panel */}
                 {isAssignOpen && (
                   <div className="tk-inline-form">
-                    <label className="tk-inline-form-label">Technician user id</label>
-                    <input
-                      type="text"
-                      className="tk-input"
-                      placeholder="Paste the technician's user id"
+                    <label className="tk-inline-form-label">Assign technician</label>
+
+                    <select
+                      className="tk-select"
                       value={assignTechId}
                       onChange={(e) => setAssignTechId(e.target.value)}
-                    />
-                    <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, marginBottom: 0 }}>
-                      Enter the technician's user id exactly as it appears in the database.
-                    </p>
+                      disabled={assigning || techLoading}
+                    >
+                      <option value="" disabled hidden>
+                        {techLoading ? "Loading technicians..." : "Select a technician..."}
+                      </option>
+                      {technicians.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.fullName || t.email} ({t.role}) — {t.id.slice(0, 8)}
+                        </option>
+                      ))}
+                    </select>
+
+                    {technicians.length === 0 && !techLoading && (
+                      <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, marginBottom: 0 }}>
+                        No technicians found. Promote a user in Users → set role to TECHNICIAN, then refresh.
+                      </p>
+                    )}
+
                     <div className="tk-inline-form-actions">
                       <button
                         className="tk-btn tk-btn-primary"
@@ -235,13 +273,21 @@ const TicketListPage = () => {
                       >
                         Cancel
                       </button>
+                      <button
+                        className="tk-btn tk-btn-light"
+                        type="button"
+                        onClick={fetchTechnicians}
+                        disabled={assigning || techLoading}
+                      >
+                        {techLoading ? "Refreshing..." : "Refresh Techs"}
+                      </button>
                     </div>
                   </div>
                 )}
 
                 <div className="tk-card-actions">
                   <Link className="tk-btn tk-btn-ghost" to={`/tickets/${ticket.id}`}>
-                    👁  View Details
+                    👁 View Details
                   </Link>
                   {canAssign && !isAssignOpen && (
                     <button
@@ -263,3 +309,4 @@ const TicketListPage = () => {
 };
 
 export default TicketListPage;
+

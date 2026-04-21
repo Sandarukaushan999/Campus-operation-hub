@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -26,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 // In Docker the upload-dir is mapped to a host volume, so files
 // stay safe across container restarts.
 @Service
+@Slf4j
 public class FileStorageService {
 
     // Image types we accept. Anything else gets rejected with a 400.
@@ -68,7 +70,8 @@ public class FileStorageService {
         try {
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new BadRequestException("Failed to save attachment");
+            log.warn("Failed to save attachment to {}: {}", targetPath, e.getMessage());
+            throw new BadRequestException("Failed to save attachment (storage permission or disk error)");
         }
 
         return safeName;

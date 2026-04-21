@@ -90,6 +90,7 @@ const CreateBookingPage = () => {
 
   const today = new Date();
   const todayKey = toDateKey(today);
+  const currentTimeKey = `${pad2(today.getHours())}:${pad2(today.getMinutes())}`;
   const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const canGoPrevMonth = calendarMonth > currentMonthStart;
   const calendarDays = useMemo(() => buildCalendarDays(calendarMonth), [calendarMonth]);
@@ -375,7 +376,8 @@ const CreateBookingPage = () => {
               <div className="slot-list">
                 {daySlots.map((slot) => {
                   const key = slotKey(slot.startTime, slot.endTime);
-                  const isAvailable = availableSlotKeySet.has(key);
+                  const isPastTimeToday = form.date === todayKey && slot.startTime <= currentTimeKey;
+                  const isAvailable = availableSlotKeySet.has(key) && !isPastTimeToday;
                   const isTaken = !isAvailable;
                   const active = isAvailable && form.startTime === slot.startTime && form.endTime === slot.endTime;
 
@@ -389,7 +391,7 @@ const CreateBookingPage = () => {
                     >
                       <span>{slot.startTime} - {slot.endTime}</span>
                       <span className={`slot-status${isTaken ? " is-taken" : " is-open"}`}>
-                        {isTaken ? "Taken" : "Available"}
+                        {isAvailable ? "Available" : (isPastTimeToday ? "Past" : "Taken")}
                       </span>
                     </button>
                   );

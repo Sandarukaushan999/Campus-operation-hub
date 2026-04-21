@@ -16,6 +16,10 @@ services:
   backend:
     build: ./backend
     container_name: campus-backend
+    # Windows bind mounts can be unwritable for non-root users inside Linux containers.
+    # We run as root for the local-dev stack so ticket attachments can be saved to ./uploads.
+    # (Production deployments should run as a non-root user and use a proper storage volume/service.)
+    user: "0:0"
     ports:
       - "8080:8080"
     environment:

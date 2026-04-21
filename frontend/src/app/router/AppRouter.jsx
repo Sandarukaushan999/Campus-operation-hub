@@ -16,6 +16,7 @@ import CreateTicketPage from "../../features/tickets/pages/CreateTicketPage";
 import TicketDetailsPage from "../../features/tickets/pages/TicketDetailsPage";
 import TicketListPage from "../../features/tickets/pages/TicketListPage";
 import AssignedTicketsPage from "../../features/tickets/pages/AssignedTicketsPage";
+import AdminUsersPage from "../../features/admin/pages/AdminUsersPage";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -90,6 +91,15 @@ const AppRouter = () => (
         element={
           <AdminRoute>
             <BookingListPage />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="admin/users"
+        element={
+          <AdminRoute>
+            <AdminUsersPage />
           </AdminRoute>
         }
       />

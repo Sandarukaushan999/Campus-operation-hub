@@ -227,7 +227,7 @@ public class BookingServiceImpl implements BookingService {
                 .sorted(Comparator.comparing(Booking::getStartTime))
                 .toList();
 
-            List<TimeSlotResponse> availableSlots = calculateAvailableSlots(dateBookings);
+            List<TimeSlotResponse> availableSlots = calculateAvailableSlots(date, dateBookings);
 
             days.add(new BookingAvailabilityDayResponse(
                 date,
@@ -250,13 +250,21 @@ public class BookingServiceImpl implements BookingService {
         return total;
     }
 
-    private List<TimeSlotResponse> calculateAvailableSlots(List<Booking> dateBookings) {
+    private List<TimeSlotResponse> calculateAvailableSlots(LocalDate date, List<Booking> dateBookings) {
         List<TimeSlotResponse> availableSlots = new ArrayList<>();
+        boolean isToday = LocalDate.now().equals(date);
+        LocalTime now = isToday ? LocalTime.now() : null;
 
         for (LocalTime slotStart = SCHEDULER_START_TIME;
              !slotStart.plusMinutes(SLOT_MINUTES).isAfter(SCHEDULER_END_TIME);
              slotStart = slotStart.plusMinutes(SLOT_MINUTES)) {
             LocalTime slotEnd = slotStart.plusMinutes(SLOT_MINUTES);
+
+            // For "today", hide past or current slots so the UI doesn't show
+            // a time that would later be rejected by createBooking validation.
+            if (isToday && !slotStart.isAfter(now)) {
+                continue;
+            }
             boolean hasConflict = false;
 
             for (Booking booking : dateBookings) {

@@ -7,7 +7,7 @@ import "./Navbar.css";
 // Top navigation bar.
 //
 // Layout:
-//   [ Logo ]   Dashboard · Resources · Bookings ▾ · Tickets ▾   [ User · Logout ]
+//   [ Logo ]   Dashboard · Resources · Users · Bookings ▾ · Tickets ▾   [ User · Logout ]
 //
 // "Bookings" and "Tickets" are dropdown buttons. Clicking opens a panel
 // listing the sub-items. The dropdown closes when:
@@ -108,6 +108,13 @@ const Navbar = () => {
             <NavLink to="/resources" className={linkClass}>
               <span className="nav-link-icon">🏛</span>Resources
             </NavLink>
+
+            {/* Top level - Users (admin only) */}
+            {user?.role === "ADMIN" && (
+              <NavLink to="/admin/users" className={linkClass}>
+                <span className="nav-link-icon">👥</span>Users
+              </NavLink>
+            )}
 
             {/* Dropdown - Bookings */}
             <div className="nav-dropdown">

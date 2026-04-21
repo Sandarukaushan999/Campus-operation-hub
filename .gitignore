@@ -41,6 +41,7 @@ dependency-reduced-pom.xml
 
 # ---------- Java / Gradle ----------
 .gradle/
+.gradle-tmp/
 build/
 **/build/
 !**/src/main/**/build/
