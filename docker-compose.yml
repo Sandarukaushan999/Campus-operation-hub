@@ -36,6 +36,19 @@ services:
       # Where Module C will save uploaded ticket images.
       # The folder below is mounted as a host volume so files survive restarts.
       APP_STORAGE_UPLOAD_DIR: /app/uploads/tickets
+
+      # Optional: seed temporary demo accounts (admin/technician/user).
+      # Disabled by default. Configure in .env if needed.
+      APP_SEED_ENABLED: ${APP_SEED_ENABLED:-false}
+      APP_SEED_ADMIN_EMAIL: ${APP_SEED_ADMIN_EMAIL:-}
+      APP_SEED_ADMIN_PASSWORD: ${APP_SEED_ADMIN_PASSWORD:-}
+      APP_SEED_ADMIN_FULL_NAME: ${APP_SEED_ADMIN_FULL_NAME:-Admin User}
+      APP_SEED_TECHNICIAN_EMAIL: ${APP_SEED_TECHNICIAN_EMAIL:-}
+      APP_SEED_TECHNICIAN_PASSWORD: ${APP_SEED_TECHNICIAN_PASSWORD:-}
+      APP_SEED_TECHNICIAN_FULL_NAME: ${APP_SEED_TECHNICIAN_FULL_NAME:-Technician User}
+      APP_SEED_USER_EMAIL: ${APP_SEED_USER_EMAIL:-}
+      APP_SEED_USER_PASSWORD: ${APP_SEED_USER_PASSWORD:-}
+      APP_SEED_USER_FULL_NAME: ${APP_SEED_USER_FULL_NAME:-Student User}
     volumes:
       # Keep uploaded ticket images on the host machine, not inside the container
       - ./uploads:/app/uploads
