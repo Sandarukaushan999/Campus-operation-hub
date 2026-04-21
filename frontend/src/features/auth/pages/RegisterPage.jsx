@@ -10,7 +10,6 @@ const RegisterPage = () => {
     fullName: "",
     email: "",
     password: "",
-    role: "USER",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -78,19 +77,6 @@ const RegisterPage = () => {
               required
               minLength={6}
             />
-          </div>
-          <div className="form-field">
-            <label htmlFor="role">Role</label>
-            <select
-              id="role"
-              className="input"
-              value={form.role}
-              onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}
-            >
-              <option value="USER">USER</option>
-              <option value="ADMIN">ADMIN</option>
-              <option value="TECHNICIAN">TECHNICIAN</option>
-            </select>
           </div>
           <button className="btn btn-primary" type="submit" disabled={loading}>
             {loading ? "Creating account..." : "Register"}

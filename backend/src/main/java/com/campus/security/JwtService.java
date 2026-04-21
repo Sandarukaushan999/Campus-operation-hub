@@ -3,6 +3,7 @@ package com.campus.security;
 import com.campus.domain.User;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
@@ -17,13 +18,29 @@ import org.springframework.stereotype.Service;
 @Service
 public class JwtService {
 
+    private static final int MIN_SECRET_LENGTH = 32;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${app.security.jwt-secret:change-this-secret-key-in-production}")
+    @Value("${app.security.jwt-secret}")
     private String secret;
 
     @Value("${app.security.jwt-expiration-seconds:86400}")
     private long expirationSeconds;
+
+    @PostConstruct
+    void validateSecret() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                "app.security.jwt-secret is not set. Define APP_SECURITY_JWT_SECRET in your environment."
+            );
+        }
+        if (secret.length() < MIN_SECRET_LENGTH) {
+            throw new IllegalStateException(
+                "app.security.jwt-secret must be at least " + MIN_SECRET_LENGTH + " characters."
+            );
+        }
+    }
 
     public String generateToken(User user) {
         try {

@@ -45,6 +45,9 @@ services:
       # Needed so Vite hot reload sees file changes when the source folder
       # is mounted from a Windows host.
       CHOKIDAR_USEPOLLING: "true"
+      # Backend base URL as seen from the browser (host machine),
+      # not from inside the frontend container. Vite inlines this at build/dev time.
+      VITE_API_BASE_URL: "http://localhost:8080/api"
     volumes:
       # Mount the source so code changes show up live without rebuilding
       - ./frontend:/app
