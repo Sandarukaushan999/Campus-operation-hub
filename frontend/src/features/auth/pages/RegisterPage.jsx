@@ -20,11 +20,20 @@ const RegisterPage = () => {
     setError("");
     setLoading(true);
     try {
-      const authData = await registerApi(form);
+      const authData = await registerApi({
+        ...form,
+        fullName: form.fullName.trim(),
+        email: form.email.trim().toLowerCase(),
+      });
       login(authData);
       navigate("/dashboard");
     } catch (err) {
-      setError(err?.response?.data?.message ?? "Registration failed");
+      const details = err?.response?.data?.details;
+      setError(
+        (Array.isArray(details) && details.length > 0 && details[0]) ||
+        err?.response?.data?.message ||
+        "Registration failed",
+      );
     } finally {
       setLoading(false);
     }

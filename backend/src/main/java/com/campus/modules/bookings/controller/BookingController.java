@@ -3,14 +3,17 @@ package com.campus.modules.bookings.controller;
 import com.campus.common.response.ApiResponse;
 import com.campus.domain.User;
 import com.campus.modules.bookings.dto.ApproveBookingRequest;
+import com.campus.modules.bookings.dto.BookingAvailabilityResponse;
 import com.campus.modules.bookings.dto.BookingResponse;
 import com.campus.modules.bookings.dto.CancelBookingRequest;
 import com.campus.modules.bookings.dto.CreateBookingRequest;
 import com.campus.modules.bookings.dto.RejectBookingRequest;
 import com.campus.modules.bookings.service.BookingService;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -50,6 +54,16 @@ public class BookingController {
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getMyBookings(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok("My bookings fetched", bookingService.getMyBookings(user.getId())));
+    }
+
+    @GetMapping("/availability")
+    public ResponseEntity<ApiResponse<BookingAvailabilityResponse>> getAvailability(
+        @RequestParam String resourceId,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        BookingAvailabilityResponse response = bookingService.getAvailability(resourceId, from, to);
+        return ResponseEntity.ok(ApiResponse.ok("Booking availability fetched", response));
     }
 
     @GetMapping("/{id}")
