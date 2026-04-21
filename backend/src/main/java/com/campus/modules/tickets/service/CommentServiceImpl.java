@@ -2,6 +2,7 @@ package com.campus.modules.tickets.service;
 
 import com.campus.common.enums.UserRole;
 import com.campus.common.exception.BadRequestException;
+import com.campus.common.exception.ForbiddenException;
 import com.campus.common.exception.ResourceNotFoundException;
 import com.campus.domain.Comment;
 import com.campus.domain.Ticket;
@@ -91,7 +92,7 @@ public class CommentServiceImpl implements CommentService {
 
         // ONLY the author can edit. Even an admin cannot rewrite somebody else's words.
         if (!comment.getUserId().equals(userId)) {
-            throw new BadRequestException("You can only edit your own comment");
+            throw new ForbiddenException("You can only edit your own comment");
         }
 
         comment.setText(request.text().trim());
@@ -111,7 +112,7 @@ public class CommentServiceImpl implements CommentService {
         boolean isAuthor = comment.getUserId().equals(userId);
         boolean isAdmin = userRole == UserRole.ADMIN;
         if (!isAuthor && !isAdmin) {
-            throw new BadRequestException("You can only delete your own comment");
+            throw new ForbiddenException("You can only delete your own comment");
         }
 
         commentRepository.delete(comment);
@@ -137,7 +138,7 @@ public class CommentServiceImpl implements CommentService {
         boolean isOwner = ticket.getCreatedBy().equals(actorId);
         boolean isAssignee = ticket.getAssignedTo() != null && ticket.getAssignedTo().equals(actorId);
         if (!isOwner && !isAssignee) {
-            throw new BadRequestException("You are not allowed to comment on this ticket");
+            throw new ForbiddenException("You are not allowed to comment on this ticket");
         }
     }
 

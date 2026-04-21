@@ -3,6 +3,16 @@ import { Link } from "react-router-dom";
 import { getResources } from "../../../api/resourceApi";
 import useAuth from "../../../hooks/useAuth";
 
+const statusBadgeClass = (status) => {
+  switch (status) {
+    case "AVAILABLE":   return "badge badge-approved";
+    case "MAINTENANCE": return "badge badge-pending";
+    case "UNAVAILABLE":
+    case "INACTIVE":    return "badge badge-rejected";
+    default:            return "badge";
+  }
+};
+
 const ResourceListPage = () => {
   const { user } = useAuth();
   const [resources, setResources] = useState([]);
@@ -46,7 +56,7 @@ const ResourceListPage = () => {
               <h3>{item.name}</h3>
               <p>{item.location}</p>
               <p>Capacity: {item.capacity}</p>
-              <span className="badge badge-approved">{item.status}</span>
+              <span className={statusBadgeClass(item.status)}>{item.status}</span>
             </div>
           ))}
           {resources.length === 0 && <div className="card">No resources yet.</div>}

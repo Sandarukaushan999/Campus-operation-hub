@@ -9,8 +9,9 @@
 ### =====================================================================
 
 @baseUrl = http://localhost:8080
-@email = admin@campus.lk
-@password = Test1234
+# Fill in a real admin account you have registered locally. Never commit real credentials.
+@email = PASTE_ADMIN_EMAIL_HERE
+@password = PASTE_ADMIN_PASSWORD_HERE
 
 # Paste from the Login response
 @token = PASTE_JWT_TOKEN_HERE
@@ -59,7 +60,7 @@ HIGH
 ------RestClientBoundary
 Content-Disposition: form-data; name="contactDetails"
 
-admin@campus.lk
+{{email}}
 ------RestClientBoundary
 Content-Disposition: form-data; name="location"
 

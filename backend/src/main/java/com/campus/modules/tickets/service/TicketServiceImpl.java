@@ -4,6 +4,7 @@ import com.campus.common.enums.TicketStatus;
 import com.campus.common.enums.UserRole;
 import com.campus.common.exception.BadRequestException;
 import com.campus.common.exception.ConflictException;
+import com.campus.common.exception.ForbiddenException;
 import com.campus.common.exception.ResourceNotFoundException;
 import com.campus.domain.Resource;
 import com.campus.domain.Ticket;
@@ -22,6 +23,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,6 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
 // Things this class does NOT do:
 //   - HTTP / multipart parsing  (that is the controller's job)
 //   - file IO  (delegated to FileStorageService)
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TicketServiceImpl implements TicketService {
@@ -207,17 +210,17 @@ public class TicketServiceImpl implements TicketService {
                     throw new BadRequestException("Open tickets can only be rejected (use assign to start work)");
                 }
                 if (!isAdmin) {
-                    throw new BadRequestException("Only an admin can reject a ticket");
+                    throw new ForbiddenException("Only an admin can reject a ticket");
                 }
             }
             case ASSIGNED -> {
                 if (to == TicketStatus.IN_PROGRESS) {
                     if (!isAssignee && !isAdmin) {
-                        throw new BadRequestException("Only the assigned technician can start work");
+                        throw new ForbiddenException("Only the assigned technician can start work");
                     }
                 } else if (to == TicketStatus.REJECTED) {
                     if (!isAdmin) {
-                        throw new BadRequestException("Only an admin can reject a ticket");
+                        throw new ForbiddenException("Only an admin can reject a ticket");
                     }
                 } else {
                     throw new BadRequestException("Assigned tickets can only move to in-progress or rejected");
@@ -226,11 +229,11 @@ public class TicketServiceImpl implements TicketService {
             case IN_PROGRESS -> {
                 if (to == TicketStatus.RESOLVED) {
                     if (!isAssignee && !isAdmin) {
-                        throw new BadRequestException("Only the assigned technician can resolve a ticket");
+                        throw new ForbiddenException("Only the assigned technician can resolve a ticket");
                     }
                 } else if (to == TicketStatus.REJECTED) {
                     if (!isAdmin) {
-                        throw new BadRequestException("Only an admin can reject a ticket");
+                        throw new ForbiddenException("Only an admin can reject a ticket");
                     }
                 } else {
                     throw new BadRequestException("In-progress tickets can only move to resolved or rejected");
@@ -241,11 +244,11 @@ public class TicketServiceImpl implements TicketService {
                 // (re-open) if the issue is not really fixed.
                 if (to == TicketStatus.CLOSED) {
                     if (!isOwner && !isAdmin) {
-                        throw new BadRequestException("Only the ticket owner can close it");
+                        throw new ForbiddenException("Only the ticket owner can close it");
                     }
                 } else if (to == TicketStatus.IN_PROGRESS) {
                     if (!isOwner && !isAdmin) {
-                        throw new BadRequestException("Only the ticket owner can re-open it");
+                        throw new ForbiddenException("Only the ticket owner can re-open it");
                     }
                 } else {
                     throw new BadRequestException("Resolved tickets can only be closed or re-opened");
@@ -296,7 +299,7 @@ public class TicketServiceImpl implements TicketService {
         boolean isOwner = ticket.getCreatedBy().equals(actorId);
 
         if (!isAdmin && !isOwner) {
-            throw new BadRequestException("You can only delete your own ticket");
+            throw new ForbiddenException("You can only delete your own ticket");
         }
 
         // Owners can only delete while the ticket is still OPEN. Once a technician
@@ -305,9 +308,16 @@ public class TicketServiceImpl implements TicketService {
             throw new BadRequestException("You can only delete a ticket while it is still open");
         }
 
-        // Best-effort cleanup of attachment files on disk.
+        // Best-effort cleanup of attachment files on disk. A single failure
+        // should not block the DB delete, but it should leave a server-side
+        // trail so orphans can be cleaned up later.
         for (String filename : ticket.getAttachments()) {
-            fileStorageService.delete(filename);
+            try {
+                fileStorageService.delete(filename);
+            } catch (Exception ex) {
+                log.warn("Failed to delete attachment '{}' for ticket {}: {}",
+                    filename, ticket.getId(), ex.getMessage());
+            }
         }
 
         // Wipe any comments tied to this ticket so we do not leave orphans.
@@ -356,7 +366,7 @@ public class TicketServiceImpl implements TicketService {
         boolean isOwner = ticket.getCreatedBy().equals(actorId);
         boolean isAssignee = ticket.getAssignedTo() != null && ticket.getAssignedTo().equals(actorId);
         if (!isOwner && !isAssignee) {
-            throw new BadRequestException("You are not allowed to view this ticket");
+            throw new ForbiddenException("You are not allowed to view this ticket");
         }
     }
 

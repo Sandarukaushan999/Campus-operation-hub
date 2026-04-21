@@ -5,6 +5,7 @@ import com.campus.common.enums.ResourceStatus;
 import com.campus.common.enums.UserRole;
 import com.campus.common.exception.BadRequestException;
 import com.campus.common.exception.ConflictException;
+import com.campus.common.exception.ForbiddenException;
 import com.campus.common.exception.ResourceNotFoundException;
 import com.campus.common.util.DateTimeUtil;
 import com.campus.common.util.ValidationUtil;
@@ -118,7 +119,7 @@ public class BookingServiceImpl implements BookingService {
             .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
         if (actorRole != UserRole.ADMIN && !booking.getUserId().equals(actorId)) {
-            throw new BadRequestException("You are not allowed to view this booking");
+            throw new ForbiddenException("You are not allowed to view this booking");
         }
 
         return toResponse(booking);
@@ -166,7 +167,7 @@ public class BookingServiceImpl implements BookingService {
         boolean isOwner = booking.getUserId().equals(actorId);
 
         if (!isAdmin && !isOwner) {
-            throw new BadRequestException("You can only cancel your own booking");
+            throw new ForbiddenException("You can only cancel your own booking");
         }
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
@@ -174,7 +175,11 @@ public class BookingServiceImpl implements BookingService {
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
-        booking.setRejectionReason(request.reason() == null ? booking.getRejectionReason() : request.reason().trim());
+        // Always overwrite with the cancellation reason (null is allowed when the
+        // user cancels silently). We intentionally DO NOT keep a prior rejection
+        // reason around — the booking is now CANCELLED, not REJECTED, and the two
+        // explanations shouldn't be confused.
+        booking.setRejectionReason(request.reason() == null ? null : request.reason().trim());
         booking.setUpdatedAt(Instant.now());
 
         return toResponse(bookingRepository.save(booking));

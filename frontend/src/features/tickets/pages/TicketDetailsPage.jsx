@@ -212,29 +212,34 @@ const TicketDetailsPage = () => {
     }
 
     let cancelled = false;
-    const blobs = [];
+    const loaded = [];
 
     const loadAll = async () => {
-      for (const url of ticket.attachmentUrls) {
-        const filename = extractFilename(url);
-        try {
+      // Fetch all attachments in parallel so the gallery doesn't appear one
+      // image at a time when a ticket has several images.
+      const results = await Promise.allSettled(
+        ticket.attachmentUrls.map(async (url) => {
+          const filename = extractFilename(url);
           const blobUrl = await loadAttachmentBlob(ticket.id, filename);
-          if (cancelled) {
-            URL.revokeObjectURL(blobUrl);
-            return;
-          }
-          blobs.push({ filename, url: blobUrl });
-          setAttachmentBlobs([...blobs]);
-        } catch {
-          // Skip a single failing image
-        }
+          return { filename, url: blobUrl };
+        }),
+      );
+      if (cancelled) {
+        results.forEach((r) => {
+          if (r.status === "fulfilled") URL.revokeObjectURL(r.value.url);
+        });
+        return;
       }
+      results.forEach((r) => {
+        if (r.status === "fulfilled") loaded.push(r.value);
+      });
+      setAttachmentBlobs(loaded.slice());
     };
     loadAll();
 
     return () => {
       cancelled = true;
-      blobs.forEach((b) => URL.revokeObjectURL(b.url));
+      loaded.forEach((b) => URL.revokeObjectURL(b.url));
     };
   }, [ticket]);
 

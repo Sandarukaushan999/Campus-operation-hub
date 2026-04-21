@@ -143,13 +143,16 @@ public class FileStorageService {
 
     // Pick a safe extension based on the content type. We do NOT trust the
     // original filename's extension because users can rename anything.
+    // The default branch is unreachable in normal flow (validateAllowedTypes
+    // rejects anything else first), but we fail loudly if that guarantee ever
+    // breaks — better than saving files with no extension.
     private String pickExtension(MultipartFile file) {
         String type = file.getContentType() == null ? "" : file.getContentType().toLowerCase();
         return switch (type) {
             case "image/png" -> ".png";
             case "image/jpeg" -> ".jpg";
             case "image/webp" -> ".webp";
-            default -> "";
+            default -> throw new BadRequestException("Unsupported image type: " + type);
         };
     }
 }

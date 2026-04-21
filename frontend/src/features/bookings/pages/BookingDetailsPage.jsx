@@ -9,12 +9,19 @@ const statusClass = (status) => {
   return "badge badge-pending";
 };
 
+const parseErr = (err, fallback) => {
+  const details = err?.response?.data?.details;
+  if (Array.isArray(details) && details.length > 0) return details[0];
+  return err?.response?.data?.message ?? fallback;
+};
+
 const BookingDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
 
   const fetchBooking = async () => {
     try {
@@ -22,7 +29,7 @@ const BookingDetailsPage = () => {
       const data = await getBookingById(id);
       setBooking(data);
     } catch (err) {
-      setError(err?.response?.data?.message ?? "Failed to load booking details");
+      setError(parseErr(err, "Failed to load booking details"));
     } finally {
       setLoading(false);
     }
@@ -33,11 +40,17 @@ const BookingDetailsPage = () => {
   }, [id]);
 
   const onCancel = async () => {
+    const reason = window.prompt("Reason for cancelling? (optional)");
+    if (reason === null) return;
+    if (!window.confirm("Cancel this booking?")) return;
+    setCancelling(true);
     try {
-      await cancelBooking(id, { reason: "Cancelled by user" });
+      await cancelBooking(id, { reason: reason.trim() || null });
       await fetchBooking();
     } catch (err) {
-      setError(err?.response?.data?.message ?? "Failed to cancel booking");
+      setError(parseErr(err, "Failed to cancel booking"));
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -69,8 +82,8 @@ const BookingDetailsPage = () => {
 
         <div className="row" style={{ marginTop: 10 }}>
           {(booking.status === "PENDING" || booking.status === "APPROVED") && (
-            <button className="btn btn-danger" type="button" onClick={onCancel}>
-              Cancel Booking
+            <button className="btn btn-danger" type="button" onClick={onCancel} disabled={cancelling}>
+              {cancelling ? "Cancelling..." : "Cancel Booking"}
             </button>
           )}
           <button className="btn btn-light" type="button" onClick={() => navigate(-1)}>

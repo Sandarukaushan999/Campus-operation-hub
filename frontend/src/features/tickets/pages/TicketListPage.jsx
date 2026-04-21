@@ -216,7 +216,7 @@ const TicketListPage = () => {
                       onChange={(e) => setAssignTechId(e.target.value)}
                     />
                     <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, marginBottom: 0 }}>
-                      Tip: a "list technicians" endpoint is coming from Member 4 — until then, paste the user id from MongoDB.
+                      Enter the technician's user id exactly as it appears in the database.
                     </p>
                     <div className="tk-inline-form-actions">
                       <button

@@ -7,8 +7,17 @@ const AuthContext = createContext(null);
 const getStoredSession = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Reject malformed sessions so the app never sees a half-populated user.
+    // The axios 401 interceptor will still recover from expired tokens.
+    if (!parsed?.token || !parsed?.user?.id) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
+    localStorage.removeItem(STORAGE_KEY);
     return null;
   }
 };

@@ -7,8 +7,8 @@
   },
   "variable": [
     { "key": "baseUrl",      "value": "http://localhost:8080" },
-    { "key": "email",        "value": "admin@campus.lk" },
-    { "key": "password",     "value": "Test1234" },
+    { "key": "email",        "value": "PASTE_ADMIN_EMAIL_HERE" },
+    { "key": "password",     "value": "PASTE_ADMIN_PASSWORD_HERE" },
     { "key": "token",        "value": "" },
     { "key": "ticketId",     "value": "" },
     { "key": "commentId",    "value": "" },
