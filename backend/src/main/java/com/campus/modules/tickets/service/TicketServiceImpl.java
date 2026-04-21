@@ -60,6 +60,25 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketResponse createTicket(String userId, CreateTicketRequest request, List<MultipartFile> attachments) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required");
+        }
+        if (request.title() == null || request.title().isBlank()) {
+            throw new BadRequestException("Title is required");
+        }
+        if (request.description() == null || request.description().isBlank()) {
+            throw new BadRequestException("Description is required");
+        }
+        if (request.contactDetails() == null || request.contactDetails().isBlank()) {
+            throw new BadRequestException("Contact details are required");
+        }
+        if (request.category() == null) {
+            throw new BadRequestException("Category is required");
+        }
+        if (request.priority() == null) {
+            throw new BadRequestException("Priority is required");
+        }
+
         // The user must point at SOMETHING. Either a known resource or a free-text location.
         boolean hasResource = request.resourceId() != null && !request.resourceId().isBlank();
         boolean hasLocation = request.location() != null && !request.location().isBlank();

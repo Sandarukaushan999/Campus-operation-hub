@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -62,6 +64,27 @@ public class GlobalExceptionHandler {
             .collect(Collectors.toList());
 
         return build(HttpStatus.BAD_REQUEST, "Validation failed", request.getRequestURI(), details);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUpload(MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        return build(
+            HttpStatus.BAD_REQUEST,
+            "Upload too large",
+            request.getRequestURI(),
+            List.of("Try a smaller file (ticket attachments are limited to 2 MB each)")
+        );
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ErrorResponse> handleMultipart(MultipartException ex, HttpServletRequest request) {
+        // Covers multipart parse errors (bad boundary, oversized payload, invalid content, etc.)
+        return build(
+            HttpStatus.BAD_REQUEST,
+            "Invalid multipart request",
+            request.getRequestURI(),
+            List.of("Please re-attach files and try again")
+        );
     }
 
     @ExceptionHandler(Exception.class)
