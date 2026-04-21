@@ -14,6 +14,7 @@ import com.campus.common.enums.TicketStatus;
 import com.campus.common.enums.UserRole;
 import com.campus.common.exception.BadRequestException;
 import com.campus.common.exception.ConflictException;
+import com.campus.common.exception.ForbiddenException;
 import com.campus.common.exception.ResourceNotFoundException;
 import com.campus.domain.Resource;
 import com.campus.domain.Ticket;
@@ -298,7 +299,7 @@ class TicketServiceImplTest {
             assertThatThrownBy(() -> ticketService.updateStatus(
                 "ticket-1", "rando", UserRole.TECHNICIAN,
                 new UpdateTicketStatusRequest(TicketStatus.IN_PROGRESS, null, null)
-            )).isInstanceOf(BadRequestException.class);
+            )).isInstanceOf(ForbiddenException.class);
         }
 
         @Test
@@ -353,7 +354,7 @@ class TicketServiceImplTest {
             assertThatThrownBy(() -> ticketService.updateStatus(
                 "ticket-1", OWNER_ID, UserRole.USER,
                 new UpdateTicketStatusRequest(TicketStatus.REJECTED, null, "no good")
-            )).isInstanceOf(BadRequestException.class);
+            )).isInstanceOf(ForbiddenException.class);
         }
 
         @Test
@@ -467,7 +468,7 @@ class TicketServiceImplTest {
 
             assertThatThrownBy(() ->
                 ticketService.deleteTicket("ticket-1", "rando", UserRole.USER)
-            ).isInstanceOf(BadRequestException.class);
+            ).isInstanceOf(ForbiddenException.class);
             verify(ticketRepository, never()).delete(any());
         }
     }

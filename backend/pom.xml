@@ -12,7 +12,7 @@
 
     <groupId>com.campus</groupId>
     <artifactId>smart-campus-backend</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>smart-campus-backend</name>
     <description>Smart Campus Hub backend service</description>
 
