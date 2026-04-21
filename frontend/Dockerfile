@@ -15,9 +15,11 @@ RUN npm install
 # Copy the rest of the source code
 COPY . .
 
-# node:20-alpine ships a "node" user (uid 1000). Use it instead of root.
-RUN chown -R node:node /app
-USER node
+# NOTE: this image runs as root. That is only acceptable because this
+# Dockerfile is for the LOCAL DEV docker-compose stack (Vite dev server +
+# bind-mounted host source + anonymous node_modules volume). A production
+# frontend deployment should use a separate multi-stage Dockerfile that builds
+# a static bundle and serves it via nginx as a non-root user.
 
 EXPOSE 5173
 
