@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -84,6 +85,16 @@ public class GlobalExceptionHandler {
             "Invalid multipart request",
             request.getRequestURI(),
             List.of("Please re-attach files and try again")
+        );
+    }
+
+    @ExceptionHandler(DuplicateKeyException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateKey(DuplicateKeyException ex, HttpServletRequest request) {
+        return build(
+            HttpStatus.CONFLICT,
+            "Duplicate key error",
+            request.getRequestURI(),
+            List.of("A record with the same unique value already exists")
         );
     }
 
