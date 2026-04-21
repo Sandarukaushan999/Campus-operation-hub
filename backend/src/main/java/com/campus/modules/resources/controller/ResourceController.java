@@ -47,7 +47,7 @@ public class ResourceController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ResourceResponse>> update(
         @PathVariable String id,
-        @RequestBody UpdateResourceRequest request
+        @Valid @RequestBody UpdateResourceRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.ok("Resource updated", resourceService.update(id, request)));
     }

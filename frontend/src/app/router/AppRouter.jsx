@@ -30,6 +30,15 @@ const AdminRoute = ({ children }) => {
   return user?.role === "ADMIN" ? children : <Navigate to="/dashboard" replace />;
 };
 
+const StaffRoute = ({ children }) => {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  const allowed = user?.role === "ADMIN" || user?.role === "TECHNICIAN";
+  return allowed ? children : <Navigate to="/dashboard" replace />;
+};
+
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : children;
@@ -88,7 +97,14 @@ const AppRouter = () => (
       {/* Module C - tickets */}
       <Route path="tickets/my" element={<MyTicketsPage />} />
       <Route path="tickets/create" element={<CreateTicketPage />} />
-      <Route path="tickets/assigned" element={<AssignedTicketsPage />} />
+      <Route
+        path="tickets/assigned"
+        element={
+          <StaffRoute>
+            <AssignedTicketsPage />
+          </StaffRoute>
+        }
+      />
       <Route path="tickets/:id" element={<TicketDetailsPage />} />
       <Route
         path="tickets"

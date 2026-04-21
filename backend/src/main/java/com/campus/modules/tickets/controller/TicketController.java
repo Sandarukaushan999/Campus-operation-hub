@@ -194,9 +194,13 @@ public class TicketController {
             id, filename, user.getId(), user.getRole()
         );
 
+        // Strip CR/LF and quote chars from the filename before echoing it back
+        // in the response header (defense against CRLF / header injection).
+        String safeFilename = download.filename().replaceAll("[\\r\\n\"]", "");
+
         return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType(download.contentType()))
-            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + download.filename() + "\"")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + safeFilename + "\"")
             .body(download.resource());
     }
 }

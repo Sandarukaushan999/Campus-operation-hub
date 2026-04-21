@@ -32,6 +32,13 @@ services:
       # Keep uploaded ticket images on the host machine, not inside the container
       - ./uploads:/app/uploads
     restart: unless-stopped
+    healthcheck:
+      # Spring Boot Actuator exposes /actuator/health out of the box.
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   # ---------- React (Vite) frontend ----------
   frontend:
@@ -40,7 +47,8 @@ services:
     ports:
       - "5173:5173"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       # Needed so Vite hot reload sees file changes when the source folder
       # is mounted from a Windows host.
@@ -54,3 +62,9 @@ services:
       # ...but keep node_modules from inside the container (host has none)
       - /app/node_modules
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5173 > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

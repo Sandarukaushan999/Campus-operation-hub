@@ -15,6 +15,10 @@ RUN npm install
 # Copy the rest of the source code
 COPY . .
 
+# node:20-alpine ships a "node" user (uid 1000). Use it instead of root.
+RUN chown -R node:node /app
+USER node
+
 EXPOSE 5173
 
 # --host 0.0.0.0 is needed so the Vite server is reachable from outside the container.

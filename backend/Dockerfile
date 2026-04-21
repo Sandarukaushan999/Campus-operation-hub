@@ -32,6 +32,11 @@ COPY --from=build /app/target/*.jar app.jar
 # Module C (tickets) will save image attachments here.
 RUN mkdir -p /app/uploads/tickets
 
+# Run as an unprivileged user.
+RUN useradd --system --uid 1001 --home /app appuser \
+ && chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 8080
 
 # Start Spring Boot

@@ -78,7 +78,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<BookingResponse>> approve(
         @PathVariable String id,
         Authentication authentication,
-        @RequestBody(required = false) ApproveBookingRequest request
+        @Valid @RequestBody(required = false) ApproveBookingRequest request
     ) {
         User user = (User) authentication.getPrincipal();
         ApproveBookingRequest safeRequest = request == null ? new ApproveBookingRequest(null) : request;
@@ -102,7 +102,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<BookingResponse>> cancel(
         @PathVariable String id,
         Authentication authentication,
-        @RequestBody(required = false) CancelBookingRequest request
+        @Valid @RequestBody(required = false) CancelBookingRequest request
     ) {
         User user = (User) authentication.getPrincipal();
         CancelBookingRequest safeRequest = request == null ? new CancelBookingRequest(null) : request;

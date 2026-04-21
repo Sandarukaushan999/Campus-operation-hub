@@ -9,10 +9,17 @@ const statusClass = (status) => {
   return "badge badge-pending";
 };
 
+const parseErr = (err, fallback) => {
+  const details = err?.response?.data?.details;
+  if (Array.isArray(details) && details.length > 0) return details[0];
+  return err?.response?.data?.message ?? fallback;
+};
+
 const BookingListPage = () => {
   const [bookings, setBookings] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [pendingId, setPendingId] = useState("");
 
   const fetchBookings = async () => {
     try {
@@ -20,7 +27,7 @@ const BookingListPage = () => {
       const data = await getAllBookings();
       setBookings(data);
     } catch (err) {
-      setError(err?.response?.data?.message ?? "Failed to load all bookings");
+      setError(parseErr(err, "Failed to load all bookings"));
     } finally {
       setLoading(false);
     }
@@ -31,13 +38,36 @@ const BookingListPage = () => {
   }, []);
 
   const onApprove = async (id) => {
-    await approveBooking(id, { note: "Approved by admin" });
-    await fetchBookings();
+    if (!window.confirm("Approve this booking?")) return;
+    setPendingId(id);
+    setError("");
+    try {
+      await approveBooking(id, { note: "Approved by admin" });
+      await fetchBookings();
+    } catch (err) {
+      setError(parseErr(err, "Failed to approve booking"));
+    } finally {
+      setPendingId("");
+    }
   };
 
   const onReject = async (id) => {
-    await rejectBooking(id, { reason: "Request does not meet policy requirements" });
-    await fetchBookings();
+    const reason = window.prompt("Reason for rejecting this booking?");
+    if (reason === null) return;
+    if (!reason.trim()) {
+      setError("A rejection reason is required");
+      return;
+    }
+    setPendingId(id);
+    setError("");
+    try {
+      await rejectBooking(id, { reason: reason.trim() });
+      await fetchBookings();
+    } catch (err) {
+      setError(parseErr(err, "Failed to reject booking"));
+    } finally {
+      setPendingId("");
+    }
   };
 
   return (
@@ -72,8 +102,22 @@ const BookingListPage = () => {
                       <Link to={`/bookings/${booking.id}`}>View</Link>
                       {booking.status === "PENDING" && (
                         <>
-                          <button className="btn btn-light" type="button" onClick={() => onApprove(booking.id)}>Approve</button>
-                          <button className="btn btn-danger" type="button" onClick={() => onReject(booking.id)}>Reject</button>
+                          <button
+                            className="btn btn-light"
+                            type="button"
+                            onClick={() => onApprove(booking.id)}
+                            disabled={pendingId === booking.id}
+                          >
+                            {pendingId === booking.id ? "Approving..." : "Approve"}
+                          </button>
+                          <button
+                            className="btn btn-danger"
+                            type="button"
+                            onClick={() => onReject(booking.id)}
+                            disabled={pendingId === booking.id}
+                          >
+                            {pendingId === booking.id ? "Rejecting..." : "Reject"}
+                          </button>
                         </>
                       )}
                     </div>
