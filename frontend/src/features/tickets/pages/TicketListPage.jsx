@@ -49,8 +49,34 @@ const TicketListPage = () => {
   const [assignTechId, setAssignTechId] = useState("");
   const [assigning, setAssigning] = useState(false);
 
-  const [technicians, setTechnicians] = useState([]);
+  const [users, setUsers] = useState([]);
   const [techLoading, setTechLoading] = useState(false);
+
+  // userId -> user record, so we can show real names instead of id fragments.
+  const userMap = useMemo(() => {
+    const map = new Map();
+    for (const u of users) {
+      if (u?.id) map.set(u.id, u);
+    }
+    return map;
+  }, [users]);
+
+  // Technicians (and admins) can receive assignments.
+  const technicians = useMemo(
+    () =>
+      users
+        .filter((u) => u?.role === "TECHNICIAN" || u?.role === "ADMIN")
+        .sort((a, b) =>
+          String(a.fullName ?? "").localeCompare(String(b.fullName ?? ""), undefined, { sensitivity: "base" }),
+        ),
+    [users],
+  );
+
+  // Initial from a display name, for the round avatar badge.
+  const initialOf = (nameOrEmail) => {
+    const s = String(nameOrEmail ?? "").trim();
+    return s.length > 0 ? s.charAt(0).toUpperCase() : "?";
+  };
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -67,23 +93,19 @@ const TicketListPage = () => {
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
-  const fetchTechnicians = useCallback(async () => {
+  const fetchUsers = useCallback(async () => {
     setTechLoading(true);
     try {
-      const users = await getUsers();
-      const eligible = (users ?? []).filter((u) => u?.role === "TECHNICIAN" || u?.role === "ADMIN");
-      eligible.sort((a, b) =>
-        String(a.fullName ?? "").localeCompare(String(b.fullName ?? ""), undefined, { sensitivity: "base" }),
-      );
-      setTechnicians(eligible);
+      const data = await getUsers();
+      setUsers(Array.isArray(data) ? data : []);
     } catch {
-      setTechnicians([]);
+      setUsers([]);
     } finally {
       setTechLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchTechnicians(); }, [fetchTechnicians]);
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   const visibleTickets = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -97,8 +119,8 @@ const TicketListPage = () => {
   const onOpenAssign = (ticketId) => {
     setAssignTargetId(ticketId);
     setAssignTechId("");
-    if (technicians.length === 0 && !techLoading) {
-      fetchTechnicians();
+    if (users.length === 0 && !techLoading) {
+      fetchUsers();
     }
   };
 
@@ -191,13 +213,17 @@ const TicketListPage = () => {
             const canAssign = ticket.status === "OPEN";
             const cat = CATEGORY_META[ticket.category] ?? { label: ticket.category, icon: "📌" };
 
+            const reporter = userMap.get(ticket.createdBy);
+            const assignee = ticket.assignedTo ? userMap.get(ticket.assignedTo) : null;
+            const reporterLabel = reporter?.fullName || reporter?.email || ticket.createdBy?.slice(0, 8) || "—";
+
             return (
               <article className={`tk-card is-status-${ticket.status}`} key={ticket.id}>
                 <div className="tk-card-head">
                   <div>
                     <h3 className="tk-card-title">{ticket.title}</h3>
                     <p className="tk-card-date">
-                      Reported {formatDate(ticket.createdAt)} by {ticket.createdBy?.slice(0, 8)}
+                      Reported {formatDate(ticket.createdAt)} by <strong>{reporterLabel}</strong>
                     </p>
                   </div>
                   <span className={`tk-pill is-${ticket.status}`}>
@@ -223,10 +249,28 @@ const TicketListPage = () => {
                   <p className="tk-card-desc">{ticket.description}</p>
                 )}
 
+                {/* Assignee panel: only shows on tickets that already have a technician */}
                 {ticket.assignedTo && (
-                  <p className="tk-card-date">
-                    🛠 Assigned to: {ticket.assignedTo.slice(0, 12)}
-                  </p>
+                  <div className="tk-assignee">
+                    <div className="tk-assignee-avatar">
+                      {initialOf(assignee?.fullName || assignee?.email || ticket.assignedTo)}
+                    </div>
+                    <div className="tk-assignee-body">
+                      <div className="tk-assignee-label">🛠 Assigned technician</div>
+                      <div className="tk-assignee-name">
+                        {assignee?.fullName || "Unknown user"}
+                        {assignee?.role && (
+                          <span className="tk-assignee-role"> · {assignee.role}</span>
+                        )}
+                      </div>
+                      {assignee?.email && (
+                        <div className="tk-assignee-email">{assignee.email}</div>
+                      )}
+                      {!assignee && (
+                        <div className="tk-assignee-email tk-mono">{ticket.assignedTo}</div>
+                      )}
+                    </div>
+                  </div>
                 )}
 
                 {/* Quick assign panel */}
@@ -276,7 +320,7 @@ const TicketListPage = () => {
                       <button
                         className="tk-btn tk-btn-light"
                         type="button"
-                        onClick={fetchTechnicians}
+                        onClick={fetchUsers}
                         disabled={assigning || techLoading}
                       >
                         {techLoading ? "Refreshing..." : "Refresh Techs"}

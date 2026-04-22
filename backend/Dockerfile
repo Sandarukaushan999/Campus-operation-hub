@@ -26,7 +26,11 @@ FROM eclipse-temurin:24-jdk
 WORKDIR /app
 
 # Copy the built jar from the build stage
-COPY --from=build /app/target/*.jar app.jar
+# Be explicit so we don't accidentally copy any other artifact.
+COPY --from=build /app/target/smart-campus-backend-*.jar app.jar
+
+# Fail the build early if the jar is corrupted.
+RUN jar tf /app/app.jar > /dev/null
 
 # Make sure the upload folder exists inside the container.
 # Module C (tickets) will save image attachments here.

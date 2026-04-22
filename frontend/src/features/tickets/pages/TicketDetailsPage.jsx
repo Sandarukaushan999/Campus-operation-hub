@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   addComment,
@@ -10,6 +10,7 @@ import {
   loadAttachmentBlob,
   updateTicketStatus,
 } from "../../../api/ticketApi";
+import { getUsers } from "../../../api/userApi";
 import useAuth from "../../../hooks/useAuth";
 import "../tickets.css";
 
@@ -173,9 +174,19 @@ const TicketDetailsPage = () => {
   const [ticket, setTicket] = useState(null);
   const [comments, setComments] = useState([]);
   const [attachmentBlobs, setAttachmentBlobs] = useState([]);
+  const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+
+  // userId -> user, so we can show names instead of id fragments.
+  const userMap = useMemo(() => {
+    const map = new Map();
+    for (const u of users) {
+      if (u?.id) map.set(u.id, u);
+    }
+    return map;
+  }, [users]);
 
   const [newComment, setNewComment] = useState("");
 
@@ -203,6 +214,17 @@ const TicketDetailsPage = () => {
   }, [id]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // Load users so we can resolve reporter + assignee ids to real names.
+  // Fails silently for non-admin USERs who cannot hit /api/users; in that case
+  // we fall back to id fragments (existing behavior).
+  useEffect(() => {
+    let cancelled = false;
+    getUsers()
+      .then((data) => { if (!cancelled) setUsers(Array.isArray(data) ? data : []); })
+      .catch(() => { if (!cancelled) setUsers([]); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Fetch attachments as blob URLs so the protected endpoint works with <img>.
   useEffect(() => {
@@ -411,13 +433,23 @@ const TicketDetailsPage = () => {
           </div>
           <div className="tk-detail-info-item">
             <span className="tk-detail-info-label">Reported by</span>
-            <span className="tk-detail-info-value">{isOwner ? "🙋 You" : ticket.createdBy?.slice(0, 8)}</span>
+            <span className="tk-detail-info-value">
+              {isOwner
+                ? "🙋 You"
+                : (userMap.get(ticket.createdBy)?.fullName
+                   ?? userMap.get(ticket.createdBy)?.email
+                   ?? ticket.createdBy?.slice(0, 8))}
+            </span>
           </div>
           <div className="tk-detail-info-item">
             <span className="tk-detail-info-label">Assigned to</span>
             <span className="tk-detail-info-value">
               {ticket.assignedTo
-                ? (isAssignee ? "🙋 You" : `🛠 ${ticket.assignedTo.slice(0, 8)}`)
+                ? (isAssignee
+                    ? "🙋 You"
+                    : `🛠 ${userMap.get(ticket.assignedTo)?.fullName
+                          ?? userMap.get(ticket.assignedTo)?.email
+                          ?? ticket.assignedTo.slice(0, 8)}`)
                 : "Nobody yet"}
             </span>
           </div>
