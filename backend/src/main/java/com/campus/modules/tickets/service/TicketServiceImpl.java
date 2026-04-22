@@ -134,18 +134,16 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public List<TicketResponse> getMyTickets(String userId) {
-        return ticketRepository.findByCreatedByOrderByCreatedAtDesc(userId)
-            .stream()
-            .map(this::toResponse)
-            .toList();
+        List<Ticket> tickets = ticketRepository.findByCreatedByOrderByCreatedAtDesc(userId);
+        java.util.Map<String, User> users = loadUserLookup(tickets);
+        return tickets.stream().map(t -> toResponse(t, users)).toList();
     }
 
     @Override
     public List<TicketResponse> getAssignedTickets(String technicianId) {
-        return ticketRepository.findByAssignedToOrderByCreatedAtDesc(technicianId)
-            .stream()
-            .map(this::toResponse)
-            .toList();
+        List<Ticket> tickets = ticketRepository.findByAssignedToOrderByCreatedAtDesc(technicianId);
+        java.util.Map<String, User> users = loadUserLookup(tickets);
+        return tickets.stream().map(t -> toResponse(t, users)).toList();
     }
 
     @Override
@@ -155,7 +153,8 @@ public class TicketServiceImpl implements TicketService {
             ? ticketRepository.findAllByOrderByCreatedAtDesc()
             : ticketRepository.findByStatusOrderByCreatedAtDesc(statusFilter);
 
-        return tickets.stream().map(this::toResponse).toList();
+        java.util.Map<String, User> users = loadUserLookup(tickets);
+        return tickets.stream().map(t -> toResponse(t, users)).toList();
     }
 
     @Override
@@ -393,10 +392,29 @@ public class TicketServiceImpl implements TicketService {
     // Builds full URL paths for the attachments so the frontend can use them
     // directly in <img src="..."> tags.
     private TicketResponse toResponse(Ticket ticket) {
+        return toResponse(ticket, java.util.Map.of());
+    }
+
+    // Variant that takes a pre-built userId -> User lookup so a list mapping
+    // can resolve all names with ONE database round-trip instead of N.
+    private TicketResponse toResponse(Ticket ticket, java.util.Map<String, User> userLookup) {
         List<String> attachmentUrls = ticket.getAttachments()
             .stream()
             .map(filename -> "/api/tickets/" + ticket.getId() + "/attachments/" + filename)
             .toList();
+
+        User reporter = ticket.getCreatedBy() != null ? userLookup.get(ticket.getCreatedBy()) : null;
+        if (reporter == null && ticket.getCreatedBy() != null) {
+            reporter = userRepository.findById(ticket.getCreatedBy()).orElse(null);
+        }
+
+        User assignee = null;
+        if (ticket.getAssignedTo() != null) {
+            assignee = userLookup.get(ticket.getAssignedTo());
+            if (assignee == null) {
+                assignee = userRepository.findById(ticket.getAssignedTo()).orElse(null);
+            }
+        }
 
         return new TicketResponse(
             ticket.getId(),
@@ -409,12 +427,32 @@ public class TicketServiceImpl implements TicketService {
             ticket.getContactDetails(),
             attachmentUrls,
             ticket.getCreatedBy(),
+            reporter != null ? reporter.getFullName() : null,
+            reporter != null ? reporter.getEmail() : null,
             ticket.getAssignedTo(),
+            assignee != null ? assignee.getFullName() : null,
+            assignee != null ? assignee.getEmail() : null,
+            assignee != null && assignee.getRole() != null ? assignee.getRole().name() : null,
             ticket.getStatus(),
             ticket.getResolutionNotes(),
             ticket.getRejectionReason(),
             ticket.getCreatedAt(),
             ticket.getUpdatedAt()
         );
+    }
+
+    // Build a userId -> User lookup from a list of tickets with ONE DB hit.
+    // Used by the list endpoints so we don't do N findById calls.
+    private java.util.Map<String, User> loadUserLookup(List<Ticket> tickets) {
+        java.util.Set<String> userIds = new java.util.HashSet<>();
+        for (Ticket t : tickets) {
+            if (t.getCreatedBy() != null) userIds.add(t.getCreatedBy());
+            if (t.getAssignedTo() != null) userIds.add(t.getAssignedTo());
+        }
+        if (userIds.isEmpty()) return java.util.Map.of();
+
+        java.util.Map<String, User> map = new java.util.HashMap<>();
+        userRepository.findAllById(userIds).forEach(u -> map.put(u.getId(), u));
+        return map;
     }
 }

@@ -436,7 +436,9 @@ const TicketDetailsPage = () => {
             <span className="tk-detail-info-value">
               {isOwner
                 ? "🙋 You"
-                : (userMap.get(ticket.createdBy)?.fullName
+                : (ticket.createdByName
+                   ?? ticket.createdByEmail
+                   ?? userMap.get(ticket.createdBy)?.fullName
                    ?? userMap.get(ticket.createdBy)?.email
                    ?? ticket.createdBy?.slice(0, 8))}
             </span>
@@ -447,7 +449,9 @@ const TicketDetailsPage = () => {
               {ticket.assignedTo
                 ? (isAssignee
                     ? "🙋 You"
-                    : `🛠 ${userMap.get(ticket.assignedTo)?.fullName
+                    : `🛠 ${ticket.assignedToName
+                          ?? ticket.assignedToEmail
+                          ?? userMap.get(ticket.assignedTo)?.fullName
                           ?? userMap.get(ticket.assignedTo)?.email
                           ?? ticket.assignedTo.slice(0, 8)}`)
                 : "Nobody yet"}

@@ -280,6 +280,26 @@ const MyTicketsPage = () => {
                   </div>
                 )}
 
+                {ticket.assignedTo && (
+                  <div className="tk-assignee">
+                    <div className="tk-assignee-avatar">
+                      {String(ticket.assignedToName || ticket.assignedToEmail || ticket.assignedTo).charAt(0).toUpperCase()}
+                    </div>
+                    <div className="tk-assignee-body">
+                      <div className="tk-assignee-label">🛠 Assigned technician</div>
+                      <div className="tk-assignee-name">
+                        {ticket.assignedToName || "Technician"}
+                        {ticket.assignedToRole && (
+                          <span className="tk-assignee-role"> · {ticket.assignedToRole}</span>
+                        )}
+                      </div>
+                      {ticket.assignedToEmail && (
+                        <div className="tk-assignee-email">{ticket.assignedToEmail}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="tk-card-actions">
                   <Link className="tk-btn tk-btn-ghost" to={`/tickets/${ticket.id}`}>
                     👁  View Details

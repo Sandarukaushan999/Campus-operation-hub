@@ -213,9 +213,20 @@ const TicketListPage = () => {
             const canAssign = ticket.status === "OPEN";
             const cat = CATEGORY_META[ticket.category] ?? { label: ticket.category, icon: "📌" };
 
+            // Server already enriches reporter/assignee info on the ticket.
+            // Fall back to the admin-loaded userMap for any id the server could not resolve.
             const reporter = userMap.get(ticket.createdBy);
             const assignee = ticket.assignedTo ? userMap.get(ticket.assignedTo) : null;
-            const reporterLabel = reporter?.fullName || reporter?.email || ticket.createdBy?.slice(0, 8) || "—";
+            const reporterLabel =
+              ticket.createdByName
+              || ticket.createdByEmail
+              || reporter?.fullName
+              || reporter?.email
+              || ticket.createdBy?.slice(0, 8)
+              || "—";
+            const assigneeName = ticket.assignedToName || assignee?.fullName || "";
+            const assigneeEmail = ticket.assignedToEmail || assignee?.email || "";
+            const assigneeRole = ticket.assignedToRole || assignee?.role || "";
 
             return (
               <article className={`tk-card is-status-${ticket.status}`} key={ticket.id}>
@@ -253,20 +264,20 @@ const TicketListPage = () => {
                 {ticket.assignedTo && (
                   <div className="tk-assignee">
                     <div className="tk-assignee-avatar">
-                      {initialOf(assignee?.fullName || assignee?.email || ticket.assignedTo)}
+                      {initialOf(assigneeName || assigneeEmail || ticket.assignedTo)}
                     </div>
                     <div className="tk-assignee-body">
                       <div className="tk-assignee-label">🛠 Assigned technician</div>
                       <div className="tk-assignee-name">
-                        {assignee?.fullName || "Unknown user"}
-                        {assignee?.role && (
-                          <span className="tk-assignee-role"> · {assignee.role}</span>
+                        {assigneeName || "Unknown user"}
+                        {assigneeRole && (
+                          <span className="tk-assignee-role"> · {assigneeRole}</span>
                         )}
                       </div>
-                      {assignee?.email && (
-                        <div className="tk-assignee-email">{assignee.email}</div>
+                      {assigneeEmail && (
+                        <div className="tk-assignee-email">{assigneeEmail}</div>
                       )}
-                      {!assignee && (
+                      {!assigneeName && !assigneeEmail && (
                         <div className="tk-assignee-email tk-mono">{ticket.assignedTo}</div>
                       )}
                     </div>

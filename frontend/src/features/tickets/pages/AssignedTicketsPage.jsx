@@ -126,7 +126,12 @@ const AssignedTicketsPage = () => {
         <div className="tk-card-head">
           <div>
             <h3 className="tk-card-title">{ticket.title}</h3>
-            <p className="tk-card-date">Reported {formatDate(ticket.createdAt)}</p>
+            <p className="tk-card-date">
+              Reported {formatDate(ticket.createdAt)}
+              {(ticket.createdByName || ticket.createdByEmail) && (
+                <> by <strong>{ticket.createdByName || ticket.createdByEmail}</strong></>
+              )}
+            </p>
           </div>
           <span className={`tk-pill is-${ticket.status}`}>
             {STATUS_LABELS[ticket.status] ?? ticket.status}

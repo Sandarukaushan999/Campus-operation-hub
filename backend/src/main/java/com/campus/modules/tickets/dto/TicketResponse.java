@@ -11,6 +11,10 @@ import java.util.List;
 //
 // attachmentUrls are full URL paths the frontend can use directly,
 // like "/api/tickets/abc123/attachments/uuid.png"
+//
+// The *Name / *Email / assignedToRole fields are enriched by the service
+// (using a single batched user lookup) so the frontend can render real
+// names without hitting the admin-only /api/users endpoint.
 public record TicketResponse(
 
     String id,
@@ -29,7 +33,13 @@ public record TicketResponse(
     List<String> attachmentUrls,
 
     String createdBy,
+    String createdByName,
+    String createdByEmail,
+
     String assignedTo,
+    String assignedToName,
+    String assignedToEmail,
+    String assignedToRole,
 
     TicketStatus status,
 
