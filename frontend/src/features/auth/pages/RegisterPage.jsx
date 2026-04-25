@@ -10,19 +10,24 @@ const RegisterPage = () => {
     fullName: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (event) => {
     event.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
     setError("");
     setLoading(true);
     try {
       const authData = await registerApi({
-        ...form,
         fullName: form.fullName.trim(),
         email: form.email.trim().toLowerCase(),
+        password: form.password,
       });
       login(authData);
       navigate("/dashboard");
@@ -75,7 +80,19 @@ const RegisterPage = () => {
               value={form.password}
               onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
               required
-              minLength={6}
+              minLength={8}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="confirmPassword">Confirm Password</label>
+            <input
+              id="confirmPassword"
+              className="input"
+              type="password"
+              value={form.confirmPassword}
+              onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+              required
+              minLength={8}
             />
           </div>
           <button className="btn btn-primary" type="submit" disabled={loading}>

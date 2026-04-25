@@ -34,7 +34,7 @@ public class AuthServiceImpl implements AuthService {
             .fullName(request.fullName().trim())
             .email(normalizedEmail)
             .password(passwordEncoder.encode(request.password()))
-            .role(UserRole.USER)
+            .role(request.role() != null ? request.role() : UserRole.USER)
             .enabled(true)
             .createdAt(now)
             .updatedAt(now)
