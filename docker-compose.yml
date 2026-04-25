@@ -1,0 +1,91 @@
+# =========================================================
+# Smart Campus Hub - one command to start everything
+#   docker compose up --build
+#
+# This file starts two containers and links them together:
+#   - backend   : Spring Boot REST API on port 8080
+#   - frontend  : React/Vite dev server on port 5173
+#
+# The MongoDB database is the team's shared Atlas cluster
+# (see MONGO_URI in your .env file). No local Mongo container.
+# =========================================================
+
+services:
+
+  # ---------- Spring Boot backend ----------
+  backend:
+    build: ./backend
+    container_name: campus-backend
+    # Windows bind mounts can be unwritable for non-root users inside Linux containers.
+    # We run as root for the local-dev stack so ticket attachments can be saved to ./uploads.
+    # (Production deployments should run as a non-root user and use a proper storage volume/service.)
+    user: "0:0"
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring Boot picks env vars over application.properties automatically.
+      # All values come from the .env file at the project root.
+      # MONGO_URI and JWT_SECRET have no defaults - the backend must fail
+      # loudly if they are not provided by .env.
+      SPRING_DATA_MONGODB_URI: ${MONGO_URI}
+      APP_SECURITY_JWT_SECRET: ${JWT_SECRET}
+      # Optional vars get safe defaults so a partially-filled .env still boots.
+      APP_SECURITY_JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-86400}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+
+      # Where Module C will save uploaded ticket images.
+      # The folder below is mounted as a host volume so files survive restarts.
+      APP_STORAGE_UPLOAD_DIR: /app/uploads/tickets
+
+      # Optional: seed temporary demo accounts (admin/technician/user).
+      # Disabled by default. Configure in .env if needed.
+      APP_SEED_ENABLED: ${APP_SEED_ENABLED:-false}
+      APP_SEED_ADMIN_EMAIL: ${APP_SEED_ADMIN_EMAIL:-}
+      APP_SEED_ADMIN_PASSWORD: ${APP_SEED_ADMIN_PASSWORD:-}
+      APP_SEED_ADMIN_FULL_NAME: ${APP_SEED_ADMIN_FULL_NAME:-Admin User}
+      APP_SEED_TECHNICIAN_EMAIL: ${APP_SEED_TECHNICIAN_EMAIL:-}
+      APP_SEED_TECHNICIAN_PASSWORD: ${APP_SEED_TECHNICIAN_PASSWORD:-}
+      APP_SEED_TECHNICIAN_FULL_NAME: ${APP_SEED_TECHNICIAN_FULL_NAME:-Technician User}
+      APP_SEED_USER_EMAIL: ${APP_SEED_USER_EMAIL:-}
+      APP_SEED_USER_PASSWORD: ${APP_SEED_USER_PASSWORD:-}
+      APP_SEED_USER_FULL_NAME: ${APP_SEED_USER_FULL_NAME:-Student User}
+    volumes:
+      # Keep uploaded ticket images on the host machine, not inside the container
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    healthcheck:
+      # Spring Boot Actuator exposes /actuator/health out of the box.
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # ---------- React (Vite) frontend ----------
+  frontend:
+    build: ./frontend
+    container_name: campus-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      # Needed so Vite hot reload sees file changes when the source folder
+      # is mounted from a Windows host.
+      CHOKIDAR_USEPOLLING: "true"
+      # Backend base URL as seen from the browser (host machine),
+      # not from inside the frontend container. Vite inlines this at build/dev time.
+      VITE_API_BASE_URL: "http://localhost:8080/api"
+    volumes:
+      # Mount the source so code changes show up live without rebuilding
+      - ./frontend:/app
+      # ...but keep node_modules from inside the container (host has none)
+      - /app/node_modules
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5173 > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

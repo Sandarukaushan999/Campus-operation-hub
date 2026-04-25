@@ -1,0 +1,298 @@
+/* =========================================================================
+   Navbar - Smart Campus Hub
+   Modern, responsive top navigation with active link state.
+   ========================================================================= */
+
+.nav-wrap {
+  background: linear-gradient(135deg, #d8e7f3 0%, #f0f6fc 50%, #ffffff 100%);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(14, 46, 73, 0.04);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+
+/* ---------- Brand / logo ---------- */
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.nav-brand-icon {
+  font-size: 22px;
+}
+
+
+/* ---------- Link list ---------- */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* ---------- Dropdown menus (Bookings, Tickets) ----------
+   Modern pattern: top-level button shows the group name, clicking
+   opens a panel with the sub-items. */
+.nav-dropdown {
+  position: relative;
+}
+
+.nav-dropdown-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.nav-chevron {
+  font-size: 10px;
+  margin-left: 2px;
+  transition: transform 0.18s ease;
+  display: inline-block;
+}
+
+.nav-dropdown-btn.is-open .nav-chevron {
+  transform: rotate(180deg);
+}
+
+/* The popover panel itself */
+.nav-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(14, 46, 73, 0.18);
+  padding: 6px;
+  min-width: 200px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: tk-fadeDown 0.16s ease;
+}
+
+@keyframes tk-fadeDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Tiny arrow at the top of the panel pointing to the button */
+.nav-dropdown-panel::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 22px;
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  transform: rotate(45deg);
+}
+
+/* Each item inside a dropdown panel */
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.nav-dropdown-item:hover {
+  background: rgba(11, 106, 162, 0.08);
+  color: var(--primary);
+}
+
+.nav-dropdown-item.is-active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(11, 106, 162, 0.25);
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  background: rgba(11, 106, 162, 0.1);
+  color: var(--primary);
+}
+
+.nav-link.is-active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(11, 106, 162, 0.25);
+}
+
+.nav-link-icon {
+  font-size: 14px;
+}
+
+
+/* ---------- User info / logout (right side) ---------- */
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.nav-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.nav-user-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.nav-user-role {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--primary);
+}
+
+.nav-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(11, 106, 162, 0.25);
+}
+
+.nav-logout-btn {
+  background: rgba(180, 35, 24, 0.08);
+  color: var(--danger);
+  border: 1px solid rgba(180, 35, 24, 0.2);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.nav-logout-btn:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+
+/* ---------- Public (logged out) links ---------- */
+.nav-public-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.nav-public-link {
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.nav-public-link:hover {
+  background: rgba(11, 106, 162, 0.1);
+  color: var(--primary);
+}
+
+.nav-public-link.is-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.nav-public-link.is-primary:hover {
+  background: var(--primary-strong);
+}
+
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .nav {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .nav-links {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-user-info {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .nav {
+    padding: 10px 16px;
+  }
+  .nav-link {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .nav-brand {
+    font-size: 15px;
+  }
+  .nav-dropdown-panel {
+    min-width: 180px;
+  }
+}

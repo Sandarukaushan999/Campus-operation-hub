@@ -1,0 +1,1037 @@
+/* =========================================================================
+   Tickets Module (Member 3) - dedicated stylesheet
+   -----------------------------------------------------------------------
+   Self-contained styles for every Module C page. All classes are
+   prefixed with `tk-` so they cannot collide with other members' styles.
+   Uses the existing theme variables from styles/theme.css.
+   ========================================================================= */
+
+/* ---------- Status / priority colour tokens ---------- */
+:root {
+  --tk-status-open:        #f59e0b;
+  --tk-status-open-bg:     #fff4d6;
+  --tk-status-assigned:    #3b82f6;
+  --tk-status-assigned-bg: #dbeafe;
+  --tk-status-progress:    #8b5cf6;
+  --tk-status-progress-bg: #ede4ff;
+  --tk-status-resolved:    #10b981;
+  --tk-status-resolved-bg: #d1fae5;
+  --tk-status-closed:      #6b7280;
+  --tk-status-closed-bg:   #e5e7eb;
+  --tk-status-rejected:    #ef4444;
+  --tk-status-rejected-bg: #fee2e2;
+
+  --tk-prio-low:     #10b981;
+  --tk-prio-medium:  #f59e0b;
+  --tk-prio-high:    #f97316;
+  --tk-prio-urgent:  #ef4444;
+}
+
+
+/* ====================================================================
+   Page shell
+   ==================================================================== */
+.tk-page {
+  display: grid;
+  gap: 18px;
+}
+
+
+/* ====================================================================
+   Hero card (page header with title + actions + stats)
+   ==================================================================== */
+.tk-hero {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f6fc 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px 28px;
+}
+
+.tk-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.tk-hero-title {
+  margin: 0 0 6px 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.tk-hero-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 600px;
+}
+
+.tk-hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+
+/* ---------- Stat tiles inside the hero ---------- */
+.tk-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.tk-stat {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tk-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(14, 46, 73, 0.08);
+}
+
+.tk-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tk-stat-icon.is-total    { background: #e0eaf5; color: var(--primary); }
+.tk-stat-icon.is-open     { background: var(--tk-status-open-bg); color: var(--tk-status-open); }
+.tk-stat-icon.is-progress { background: var(--tk-status-progress-bg); color: var(--tk-status-progress); }
+.tk-stat-icon.is-resolved { background: var(--tk-status-resolved-bg); color: var(--tk-status-resolved); }
+.tk-stat-icon.is-closed   { background: var(--tk-status-closed-bg); color: var(--tk-status-closed); }
+.tk-stat-icon.is-active   { background: var(--tk-status-progress-bg); color: var(--tk-status-progress); }
+.tk-stat-icon.is-done     { background: var(--tk-status-resolved-bg); color: var(--tk-status-resolved); }
+
+.tk-stat-body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.tk-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.tk-stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-top: 2px;
+}
+
+
+/* ====================================================================
+   Filter / search bar
+   ==================================================================== */
+.tk-filters {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tk-filter-search {
+  flex: 1 1 240px;
+  position: relative;
+}
+
+.tk-filter-search input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px 10px 38px;
+  background: #fff;
+  font-size: 14px;
+  transition: border 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tk-filter-search input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(11, 106, 162, 0.15);
+}
+
+.tk-filter-search::before {
+  content: "🔍";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.tk-filter-select {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #fff;
+  font-size: 14px;
+  min-width: 160px;
+  cursor: pointer;
+}
+
+.tk-filter-select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+
+/* ====================================================================
+   Ticket cards grid
+   ==================================================================== */
+.tk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.tk-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tk-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary);
+  opacity: 0.7;
+}
+
+.tk-card.is-status-OPEN::before        { background: var(--tk-status-open); }
+.tk-card.is-status-ASSIGNED::before    { background: var(--tk-status-assigned); }
+.tk-card.is-status-IN_PROGRESS::before { background: var(--tk-status-progress); }
+.tk-card.is-status-RESOLVED::before    { background: var(--tk-status-resolved); }
+.tk-card.is-status-CLOSED::before      { background: var(--tk-status-closed); }
+.tk-card.is-status-REJECTED::before    { background: var(--tk-status-rejected); }
+
+.tk-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(14, 46, 73, 0.14);
+}
+
+.tk-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tk-card-title {
+  margin: 0 0 4px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.tk-card-date {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tk-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tk-card-desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tk-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--surface-2);
+}
+
+.tk-card-rejected-note {
+  background: var(--tk-status-rejected-bg);
+  color: #7f1d1d;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-left: 3px solid var(--tk-status-rejected);
+}
+
+
+/* ====================================================================
+   Status pill (proper rounded badge)
+   ==================================================================== */
+.tk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tk-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.tk-pill.is-OPEN        { background: var(--tk-status-open-bg);     color: var(--tk-status-open); }
+.tk-pill.is-ASSIGNED    { background: var(--tk-status-assigned-bg); color: var(--tk-status-assigned); }
+.tk-pill.is-IN_PROGRESS { background: var(--tk-status-progress-bg); color: var(--tk-status-progress); }
+.tk-pill.is-RESOLVED    { background: var(--tk-status-resolved-bg); color: var(--tk-status-resolved); }
+.tk-pill.is-CLOSED      { background: var(--tk-status-closed-bg);   color: var(--tk-status-closed); }
+.tk-pill.is-REJECTED    { background: var(--tk-status-rejected-bg); color: var(--tk-status-rejected); }
+
+
+/* ====================================================================
+   Meta chips (category, priority, location)
+   ==================================================================== */
+.tk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tk-chip-icon {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* Priority chips (filled with priority color background) */
+.tk-chip.is-prio-LOW    { background: #d1fae5; color: #065f46; }
+.tk-chip.is-prio-MEDIUM { background: #fef3c7; color: #78350f; }
+.tk-chip.is-prio-HIGH   { background: #ffedd5; color: #7c2d12; }
+.tk-chip.is-prio-URGENT { background: #fee2e2; color: #7f1d1d; }
+
+
+/* ====================================================================
+   Buttons (extending the global .btn classes with ticket flavour)
+   ==================================================================== */
+.tk-btn {
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.tk-btn:active { transform: translateY(1px); }
+.tk-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.tk-btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.tk-btn-primary:hover:not(:disabled) {
+  background: var(--primary-strong);
+  box-shadow: 0 6px 14px rgba(11, 106, 162, 0.25);
+}
+
+.tk-btn-light {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.tk-btn-light:hover:not(:disabled) {
+  background: #d4dde6;
+}
+
+.tk-btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+.tk-btn-danger:hover:not(:disabled) {
+  background: #8a1a13;
+  box-shadow: 0 6px 14px rgba(180, 35, 24, 0.25);
+}
+
+.tk-btn-ghost {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+.tk-btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+
+/* ====================================================================
+   Empty state
+   ==================================================================== */
+.tk-empty {
+  background: var(--surface);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.tk-empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.tk-empty-title {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tk-empty-text {
+  margin: 0 0 18px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.tk-empty-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+
+/* ====================================================================
+   Form layout (CreateTicketPage)
+   ==================================================================== */
+.tk-form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px 32px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.tk-form-header {
+  margin-bottom: 22px;
+}
+
+.tk-form-title {
+  margin: 0 0 6px 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.tk-form-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.tk-form-section {
+  margin-bottom: 18px;
+}
+
+.tk-form-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--primary);
+  letter-spacing: 0.6px;
+  margin: 0 0 12px 0;
+  padding: 0 0 8px 12px;
+  border-bottom: 1px solid var(--surface-2);
+  border-left: 3px solid var(--primary);
+}
+
+.tk-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.tk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tk-field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tk-input,
+.tk-textarea,
+.tk-select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+  color: var(--text);
+  transition: border 0.15s ease, box-shadow 0.15s ease;
+  font-family: inherit;
+}
+
+.tk-input:focus,
+.tk-textarea:focus,
+.tk-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(11, 106, 162, 0.15);
+}
+
+.tk-textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.tk-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--surface-2);
+}
+
+
+/* ---------- File picker ----------
+   The native <input type="file"> is hidden visually (display: none) but
+   still accessible. The visible label sits inside a wrapper div - we
+   trigger the input by clicking the label. This avoids the absolute
+   positioning leak that caused stray dashed borders.
+   ---------------------------------- */
+.tk-filepicker-wrap {
+  position: relative;
+}
+
+.tk-filepicker-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.tk-filepicker-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 26px 22px;
+  text-align: center;
+  background: #fafcfe;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tk-filepicker-label:hover,
+.tk-filepicker-input:focus + .tk-filepicker-label {
+  border-color: var(--primary);
+  background: #f0f6fc;
+}
+
+.tk-filepicker-icon {
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.tk-filepicker-text {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.tk-filepicker-text strong {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.tk-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.tk-preview {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.tk-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tk-preview-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.tk-preview-remove:hover {
+  background: var(--danger);
+}
+
+
+/* ====================================================================
+   Details page
+   ==================================================================== */
+.tk-detail-head {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f6fc 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 26px 30px;
+}
+
+.tk-detail-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.tk-detail-title {
+  margin: 0 0 6px 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.tk-detail-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.tk-detail-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px 24px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.tk-detail-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tk-detail-info-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+.tk-detail-info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tk-detail-description {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--surface-2);
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.tk-detail-callout {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tk-detail-callout.is-resolution {
+  background: var(--tk-status-resolved-bg);
+  color: #064e3b;
+  border-left: 4px solid var(--tk-status-resolved);
+}
+
+.tk-detail-callout.is-rejection {
+  background: var(--tk-status-rejected-bg);
+  color: #7f1d1d;
+  border-left: 4px solid var(--tk-status-rejected);
+}
+
+
+/* ---------- Attachment gallery ---------- */
+.tk-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px 26px;
+}
+
+.tk-section-title {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tk-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.tk-gallery-item {
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  display: block;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.tk-gallery-item:hover {
+  transform: scale(1.03);
+  box-shadow: 0 10px 22px rgba(14, 46, 73, 0.18);
+}
+
+.tk-gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tk-gallery-loading {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  align-self: center;
+}
+
+
+/* ---------- Action panel ---------- */
+.tk-action-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tk-inline-form {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  border-left: 3px solid var(--primary);
+}
+
+.tk-inline-form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.tk-inline-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+
+/* ---------- Comments thread ---------- */
+.tk-comment {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--primary);
+}
+
+.tk-comment.is-mine {
+  background: #e8f1f8;
+  border-left-color: var(--primary-strong);
+}
+
+.tk-comment-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tk-comment-author {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.tk-comment-date {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.tk-comment-edited {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  margin-left: 4px;
+}
+
+.tk-comment-text {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.tk-comment-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tk-comment-empty {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.tk-comment-form {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--surface-2);
+}
+
+
+/* ====================================================================
+   Section heading (for Active / Done dividers in Assigned page)
+   ==================================================================== */
+.tk-section-heading {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+  margin: 8px 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tk-section-heading::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+
+/* ====================================================================
+   Responsive tweaks
+   ==================================================================== */
+@media (max-width: 640px) {
+  .tk-hero,
+  .tk-form-card,
+  .tk-detail-head,
+  .tk-section {
+    padding: 18px 20px;
+  }
+  .tk-grid {
+    grid-template-columns: 1fr;
+  }
+  .tk-detail-info-grid {
+    grid-template-columns: 1fr 1fr;
+    padding: 12px 14px;
+    gap: 10px 14px;
+  }
+}
+
+/* =========================================================================
+   Assignee panel on ticket cards
+   ========================================================================= */
+.tk-assignee {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin: 10px 0 0;
+  border-radius: 10px;
+  border: 1px solid var(--tk-status-assigned);
+  background: var(--tk-status-assigned-bg);
+}
+
+.tk-assignee-avatar {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--tk-status-assigned);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.tk-assignee-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tk-assignee-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tk-status-assigned);
+  margin-bottom: 2px;
+}
+
+.tk-assignee-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tk-assignee-role {
+  font-weight: 500;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.tk-assignee-email {
+  font-size: 12px;
+  color: #475569;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tk-mono {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+/* Give non-OPEN cards a subtle tinted background so the queue reads faster.
+   OPEN stays plain white = "needs attention" */
+.tk-card.is-status-ASSIGNED    { background: color-mix(in srgb, var(--tk-status-assigned-bg) 35%, #fff); }
+.tk-card.is-status-IN_PROGRESS { background: color-mix(in srgb, var(--tk-status-progress-bg) 30%, #fff); }
+.tk-card.is-status-RESOLVED    { background: color-mix(in srgb, var(--tk-status-resolved-bg) 30%, #fff); }
+.tk-card.is-status-CLOSED      { background: color-mix(in srgb, var(--tk-status-closed-bg)   35%, #fff); }
+.tk-card.is-status-REJECTED    { background: color-mix(in srgb, var(--tk-status-rejected-bg) 35%, #fff); }

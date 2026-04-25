@@ -1,0 +1,16 @@
+:root {
+  --bg: #f2f5f8;
+  --surface: #ffffff;
+  --surface-2: #e8eef4;
+  --text: #163047;
+  --muted: #5a7389;
+  --primary: #0b6aa2;
+  --primary-strong: #085782;
+  --danger: #b42318;
+  --success: #157347;
+  --warning: #b57f00;
+  --border: #cbd7e2;
+  --radius: 14px;
+  --shadow: 0 12px 28px rgba(14, 46, 73, 0.12);
+  --font-main: "Segoe UI", "Trebuchet MS", "Verdana", sans-serif;
+}

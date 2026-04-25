@@ -1,0 +1,29 @@
+# Don't copy these into the Docker image - they would slow down the build
+# and may even break it.
+
+target/
+build/
+.gradle/
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.git/
+.gitignore
+.gitattributes
+
+# Local logs and runtime junk
+*.log
+boot-err.log
+boot-out.log
+run-err.log
+run-out.log
+run-backend.ps1
+
+# We mount uploads as a volume in docker-compose, no need to copy them in
+uploads/
+
+# Docs
+README.md
+HELP.md

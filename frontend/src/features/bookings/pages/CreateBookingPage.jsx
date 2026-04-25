@@ -1,0 +1,457 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createBooking, getBookingAvailability } from "../../../api/bookingApi";
+import { getResources } from "../../../api/resourceApi";
+
+const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const slotStartHour = 8;
+const slotEndHour = 20;
+const slotMinutes = 60;
+const availabilityPollMs = 2000;
+
+const pad2 = (value) => String(value).padStart(2, "0");
+
+const toDateKey = (date) =>
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+
+const toTimeKey = (time) => (time && time.length >= 5 ? time.slice(0, 5) : "");
+
+const slotKey = (startTime, endTime) => `${toTimeKey(startTime)}-${toTimeKey(endTime)}`;
+
+const parseServerError = (err, fallback) => {
+  const details = err?.response?.data?.details;
+  if (Array.isArray(details) && details.length > 0) {
+    return details[0];
+  }
+  return err?.response?.data?.message ?? fallback;
+};
+
+const monthLabel = (date) =>
+  date.toLocaleString(undefined, { month: "long", year: "numeric" });
+
+const buildCalendarDays = (monthDate) => {
+  const firstDayOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  const weekDayIndex = (firstDayOfMonth.getDay() + 6) % 7;
+  const gridStart = new Date(firstDayOfMonth);
+  gridStart.setDate(firstDayOfMonth.getDate() - weekDayIndex);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(gridStart);
+    day.setDate(gridStart.getDate() + index);
+    return day;
+  });
+};
+
+const buildDaySlots = () => {
+  const slots = [];
+  for (let minute = slotStartHour * 60; minute + slotMinutes <= slotEndHour * 60; minute += slotMinutes) {
+    const startHour = Math.floor(minute / 60);
+    const startMinute = minute % 60;
+    const end = minute + slotMinutes;
+    const endHour = Math.floor(end / 60);
+    const endMinute = end % 60;
+
+    slots.push({
+      startTime: `${pad2(startHour)}:${pad2(startMinute)}`,
+      endTime: `${pad2(endHour)}:${pad2(endMinute)}`,
+    });
+  }
+  return slots;
+};
+
+const CreateBookingPage = () => {
+  const navigate = useNavigate();
+  const [resources, setResources] = useState([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(
+    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  );
+  const [availabilityByDate, setAvailabilityByDate] = useState({});
+  const [form, setForm] = useState({
+    resourceId: "",
+    title: "",
+    purpose: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+  });
+
+  const monthFrom = useMemo(
+    () => toDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)),
+    [calendarMonth],
+  );
+  const monthTo = useMemo(
+    () => toDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0)),
+    [calendarMonth],
+  );
+
+  const today = new Date();
+  const todayKey = toDateKey(today);
+  const currentTimeKey = `${pad2(today.getHours())}:${pad2(today.getMinutes())}`;
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const canGoPrevMonth = calendarMonth > currentMonthStart;
+  const calendarDays = useMemo(() => buildCalendarDays(calendarMonth), [calendarMonth]);
+  const daySlots = useMemo(() => buildDaySlots(), []);
+  const selectedDay = form.date ? availabilityByDate[form.date] : null;
+
+  const availableSlotKeySet = useMemo(() => {
+    const keys = new Set();
+    (selectedDay?.availableSlots ?? []).forEach((slot) => {
+      keys.add(slotKey(slot.startTime, slot.endTime));
+    });
+    return keys;
+  }, [selectedDay]);
+
+  const refreshAvailability = useCallback(
+    async (showLoader) => {
+      if (!form.resourceId) {
+        setAvailabilityByDate({});
+        return;
+      }
+
+      if (showLoader) {
+        setAvailabilityLoading(true);
+      }
+
+      try {
+        const data = await getBookingAvailability(form.resourceId, monthFrom, monthTo);
+
+        const next = {};
+        data.days.forEach((day) => {
+          next[day.date] = day;
+        });
+
+        setAvailabilityByDate(next);
+
+        setForm((prev) => {
+          if (prev.date && next[prev.date]) {
+            return prev;
+          }
+
+          const firstAvailableDay = data.days.find((day) => day.availableSlotCount > 0);
+          if (!firstAvailableDay) {
+            return { ...prev, date: "", startTime: "", endTime: "" };
+          }
+
+          return {
+            ...prev,
+            date: firstAvailableDay.date,
+            startTime: "",
+            endTime: "",
+          };
+        });
+      } catch (err) {
+        if (showLoader) {
+          setError(parseServerError(err, "Failed to load availability calendar"));
+        }
+      } finally {
+        if (showLoader) {
+          setAvailabilityLoading(false);
+        }
+      }
+    },
+    [form.resourceId, monthFrom, monthTo],
+  );
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const data = await getResources();
+        setResources(data);
+        if (data.length > 0) {
+          setForm((prev) => ({
+            ...prev,
+            resourceId: prev.resourceId || data[0].id,
+          }));
+        }
+      } catch {
+        setError("Could not load resources for booking.");
+      }
+    };
+
+    fetchResources();
+  }, []);
+
+  useEffect(() => {
+    refreshAvailability(true);
+  }, [refreshAvailability]);
+
+  useEffect(() => {
+    if (!form.resourceId) {
+      return undefined;
+    }
+
+    const intervalId = setInterval(() => {
+      refreshAvailability(false);
+    }, availabilityPollMs);
+
+    return () => clearInterval(intervalId);
+  }, [form.resourceId, refreshAvailability]);
+
+  useEffect(() => {
+    if (!form.date || !form.startTime || !form.endTime || !selectedDay) {
+      return;
+    }
+
+    const selectedSlotKey = slotKey(form.startTime, form.endTime);
+    const stillAvailable = selectedDay.availableSlots.some(
+      (slot) => slotKey(slot.startTime, slot.endTime) === selectedSlotKey,
+    );
+
+    if (!stillAvailable) {
+      setForm((prev) => ({ ...prev, startTime: "", endTime: "" }));
+      setError("That slot was just booked by another student. Please choose another available slot.");
+    }
+  }, [selectedDay, form.date, form.startTime, form.endTime]);
+
+  const onDateSelect = (dateKey) => {
+    setError("");
+    setForm((prev) => ({
+      ...prev,
+      date: dateKey,
+      startTime: "",
+      endTime: "",
+    }));
+  };
+
+  const onSlotSelect = (dateKey, slot) => {
+    setError("");
+    setForm((prev) => ({
+      ...prev,
+      date: dateKey,
+      startTime: toTimeKey(slot.startTime),
+      endTime: toTimeKey(slot.endTime),
+    }));
+  };
+
+  const onSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!form.date || !form.startTime || !form.endTime) {
+      setError("Please select an available date and time slot from the calendar.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const latest = await getBookingAvailability(form.resourceId, form.date, form.date);
+      const latestDay = latest.days[0];
+      const selectedSlotKey = slotKey(form.startTime, form.endTime);
+      const stillAvailable = latestDay?.availableSlots?.some(
+        (slot) => slotKey(slot.startTime, slot.endTime) === selectedSlotKey,
+      );
+
+      if (!stillAvailable) {
+        if (latestDay) {
+          setAvailabilityByDate((prev) => ({ ...prev, [form.date]: latestDay }));
+        }
+        setForm((prev) => ({ ...prev, startTime: "", endTime: "" }));
+        setError("That slot was just booked by another student. Please choose another available slot.");
+        return;
+      }
+
+      const created = await createBooking({
+        ...form,
+        title: form.title.trim(),
+        purpose: form.purpose.trim() || null,
+      });
+      navigate(`/bookings/${created.id}`);
+    } catch (err) {
+      setError(parseServerError(err, "Failed to create booking"));
+      refreshAvailability(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="grid booking-create-layout">
+      <div className="card">
+        <div className="spread">
+          <h2>Schedule Booking</h2>
+          <div className="row">
+            <button
+              className="btn btn-light"
+              type="button"
+              disabled={!canGoPrevMonth}
+              onClick={() => {
+                if (canGoPrevMonth) {
+                  setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+                }
+              }}
+            >
+              Previous
+            </button>
+            <strong>{monthLabel(calendarMonth)}</strong>
+            <button
+              className="btn btn-light"
+              type="button"
+              onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
+        <div className="form-field" style={{ marginTop: 10 }}>
+          <label htmlFor="resourceId">Resource</label>
+          <select
+            id="resourceId"
+            className="input"
+            value={form.resourceId}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                resourceId: e.target.value,
+                date: "",
+                startTime: "",
+                endTime: "",
+              }))
+            }
+            required
+          >
+            {resources.map((resource) => (
+              <option key={resource.id} value={resource.id}>
+                {resource.name} - {resource.location}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="calendar-weekdays">
+          {weekdayLabels.map((label) => (
+            <div key={label}>{label}</div>
+          ))}
+        </div>
+
+        <div className="calendar-grid">
+          {calendarDays.map((day) => {
+            const dateKey = toDateKey(day);
+            const dayAvailability = availabilityByDate[dateKey];
+            const isCurrentMonth = day.getMonth() === calendarMonth.getMonth();
+            const isPast = dateKey < todayKey;
+            const isSelected = form.date === dateKey;
+            const isSelectable = isCurrentMonth && !isPast && Boolean(dayAvailability);
+
+            return (
+              <button
+                key={dateKey}
+                type="button"
+                className={`calendar-cell${isCurrentMonth ? "" : " is-muted"}${isSelected ? " is-selected" : ""}`}
+                disabled={!isSelectable}
+                onClick={() => onDateSelect(dateKey)}
+              >
+                <span className="calendar-day-number">{day.getDate()}</span>
+                <span className="calendar-day-meta">
+                  {availabilityLoading && isCurrentMonth && !isPast && "..."}
+                  {!availabilityLoading && isCurrentMonth && !isPast && dayAvailability && (
+                    dayAvailability.availableSlotCount > 0
+                      ? `${dayAvailability.availableSlotCount} slots`
+                      : "Full"
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="card">
+        <h3>Available Time Slots</h3>
+        {!form.date && <p>Select a date from the calendar to view available times.</p>}
+
+        {form.date && (
+          <>
+            <p className="muted">
+              Date: <strong>{form.date}</strong>
+            </p>
+
+            {!selectedDay && availabilityLoading && <p>Loading slots...</p>}
+
+            {selectedDay && (
+              <div className="slot-list">
+                {daySlots.map((slot) => {
+                  const key = slotKey(slot.startTime, slot.endTime);
+                  const isPastTimeToday = form.date === todayKey && slot.startTime <= currentTimeKey;
+                  const isAvailable = availableSlotKeySet.has(key) && !isPastTimeToday;
+                  const isTaken = !isAvailable;
+                  const active = isAvailable && form.startTime === slot.startTime && form.endTime === slot.endTime;
+
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`slot-btn${active ? " is-active" : ""}${isTaken ? " is-taken" : ""}`}
+                      disabled={isTaken}
+                      onClick={() => onSlotSelect(form.date, slot)}
+                    >
+                      <span>{slot.startTime} - {slot.endTime}</span>
+                      <span className={`slot-status${isTaken ? " is-taken" : " is-open"}`}>
+                        {isAvailable ? "Available" : (isPastTimeToday ? "Past" : "Taken")}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        <hr />
+
+        {error && <div className="alert alert-error">{error}</div>}
+
+        <form className="grid" onSubmit={onSubmit}>
+          <div className="form-field">
+            <label htmlFor="title">Title</label>
+            <input
+              id="title"
+              className="input"
+              value={form.title}
+              onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+              required
+            />
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="purpose">Purpose</label>
+            <textarea
+              id="purpose"
+              className="input"
+              value={form.purpose}
+              onChange={(e) => setForm((prev) => ({ ...prev, purpose: e.target.value }))}
+              rows={3}
+            />
+          </div>
+
+          <div className="grid grid-2">
+            <div className="form-field">
+              <label>Date</label>
+              <input className="input" value={form.date} readOnly placeholder="Select from calendar" />
+            </div>
+            <div className="form-field">
+              <label>Time Slot</label>
+              <input
+                className="input"
+                value={form.startTime && form.endTime ? `${form.startTime} - ${form.endTime}` : ""}
+                readOnly
+                placeholder="Select available slot"
+              />
+            </div>
+          </div>
+
+          <button className="btn btn-primary" type="submit" disabled={loading || availabilityLoading || !resources.length}>
+            {loading ? "Creating..." : "Create Booking"}
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+};
+
+export default CreateBookingPage;
+
