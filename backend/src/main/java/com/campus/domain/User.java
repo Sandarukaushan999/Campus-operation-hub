@@ -30,6 +30,12 @@ public class User implements UserDetails {
 
     private String phone;
 
+    // OAuth2 provider info ("local" for email/password users, "google" for OAuth users)
+    @Builder.Default
+    private String provider = "local";
+
+    private String googleId;
+
     @Indexed(unique = true)
     private String email;
 

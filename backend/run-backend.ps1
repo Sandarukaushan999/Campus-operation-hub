@@ -23,6 +23,9 @@ $atlasHostDefaults = [ordered]@{
   "mtm-aws-aps1-6-m0-2-shard-00-00.a8cnc.mongodb.net" = "159.143.51.11"
   "mtm-aws-aps1-6-m0-2-shard-00-01.a8cnc.mongodb.net" = "159.143.51.47"
   "mtm-aws-aps1-6-m0-2-shard-00-02.a8cnc.mongodb.net" = "159.143.51.30"
+  "www.googleapis.com" = "142.250.193.10"
+  "oauth2.googleapis.com" = "142.250.193.10"
+  "accounts.google.com" = "142.250.193.13"
 }
 
 $hostLines = @()

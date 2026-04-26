@@ -32,13 +32,21 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
     private final CorsConfigurationSource corsConfigurationSource;
     private final ObjectMapper objectMapper;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            // Stateless - no HTTP sessions. OAuth2 needs a brief session during the
+            // redirect dance so we allow IF_REQUIRED only for that flow; the JwtFilter
+            // handles all API calls without touching the session.
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+            )
+
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -67,13 +75,32 @@ public class SecurityConfig {
                     response.getWriter().write(objectMapper.writeValueAsString(body));
                 })
             )
+
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
+                // Public auth endpoints (register, login)
+                .requestMatchers("/api/auth/**", "/login").permitAll()
+                // OAuth2 redirect URIs must be public
+                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                // Public resource reads
                 .requestMatchers(HttpMethod.GET, "/api/resources/**").permitAll()
-                // Actuator liveness/readiness probe for docker healthcheck.
-                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                // Docker healthcheck & static resources
+                .requestMatchers("/actuator/health", "/actuator/health/**", "/favicon.ico", "/error").permitAll()
                 .anyRequest().authenticated()
             )
+
+            // ── OAuth2 login (Google) ──────────────────────────────────────────
+            // Spring handles /oauth2/authorization/google and the callback automatically.
+            // After success, our handler generates a JWT and redirects to the frontend.
+            .oauth2Login(oauth2 -> oauth2
+                .successHandler(oAuth2SuccessHandler)
+                .failureHandler((request, response, exception) -> {
+                    System.err.println("=== OAUTH2 LOGIN FAILED ===");
+                    exception.printStackTrace();
+                    response.sendRedirect("http://localhost:5174/login?error=oauth_failed");
+                })
+            )
+
+            // ── JWT filter (existing email/password flow) ──────────────────────
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
     }

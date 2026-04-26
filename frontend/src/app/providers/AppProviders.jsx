@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState, useCallback } from "react";
 
 const STORAGE_KEY = "campus_auth_session";
 
@@ -25,7 +25,7 @@ const getStoredSession = () => {
 export const AppProviders = ({ children }) => {
   const [session, setSession] = useState(() => getStoredSession());
 
-  const login = (authData) => {
+  const login = useCallback((authData) => {
     const next = {
       token: authData.token,
       user: {
@@ -37,12 +37,12 @@ export const AppProviders = ({ children }) => {
     };
     setSession(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setSession(null);
     localStorage.removeItem(STORAGE_KEY);
-  };
+  }, []);
 
   const value = useMemo(
     () => ({

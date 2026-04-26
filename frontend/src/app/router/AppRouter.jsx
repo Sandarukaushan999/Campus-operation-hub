@@ -18,6 +18,7 @@ import TicketListPage from "../../features/tickets/pages/TicketListPage";
 import AssignedTicketsPage from "../../features/tickets/pages/AssignedTicketsPage";
 import AdminUsersPage from "../../features/admin/pages/AdminUsersPage";
 import ProfilePage from "../../features/auth/pages/ProfilePage";
+import OAuth2CallbackPage from "../../features/auth/pages/OAuth2CallbackPage";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -64,6 +65,8 @@ const AppRouter = () => (
         </PublicOnlyRoute>
       }
     />
+    {/* OAuth2 callback - must be public (no auth yet when this is hit) */}
+    <Route path="/oauth2/callback" element={<OAuth2CallbackPage />} />
 
     <Route
       path="/"
