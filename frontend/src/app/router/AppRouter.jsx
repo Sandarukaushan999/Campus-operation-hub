@@ -6,6 +6,7 @@ import RegisterPage from "../../features/auth/pages/RegisterPage";
 import UserDashboard from "../../features/dashboard/pages/UserDashboard";
 import ResourceListPage from "../../features/resources/pages/ResourceListPage";
 import CreateResourcePage from "../../features/resources/pages/CreateResourcePage";
+import UpdateResourcePage from "../../features/resources/pages/UpdateResourcePage";
 import MyBookingsPage from "../../features/bookings/pages/MyBookingsPage";
 import BookingListPage from "../../features/bookings/pages/BookingListPage";
 import CreateBookingPage from "../../features/bookings/pages/CreateBookingPage";
@@ -85,6 +86,14 @@ const AppRouter = () => (
         element={
           <AdminRoute>
             <CreateResourcePage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="resources/update/:id"
+        element={
+          <AdminRoute>
+            <UpdateResourcePage />
           </AdminRoute>
         }
       />

@@ -10,7 +10,11 @@ public interface UserService {
 
     List<UserResponse> listUsers();
 
+    UserResponse createUser(com.campus.modules.users.dto.CreateUserRequest request);
+
     UserResponse updateUserRole(String targetUserId, String actorUserId, UpdateUserRoleRequest request);
+
+    void deleteUser(String targetUserId, String actorUserId);
 
     // Profile management - any authenticated user
     UserResponse getProfile(String userId);

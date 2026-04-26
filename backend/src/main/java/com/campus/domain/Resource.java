@@ -28,6 +28,12 @@ public class Resource {
     @Builder.Default
     private ResourceStatus status = ResourceStatus.AVAILABLE;
 
+    private String availableDate;
+    
+    private String startTime;
+    
+    private String endTime;
+
     private Instant createdAt;
 
     private Instant updatedAt;

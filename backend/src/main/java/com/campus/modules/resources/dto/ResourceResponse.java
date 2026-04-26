@@ -9,6 +9,9 @@ public record ResourceResponse(
     String location,
     Integer capacity,
     ResourceStatus status,
+    String availableDate,
+    String startTime,
+    String endTime,
     Instant createdAt,
     Instant updatedAt
 ) {

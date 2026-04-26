@@ -1,19 +1,71 @@
 $ErrorActionPreference = "Stop"
 
-$mongoUri = [Environment]::GetEnvironmentVariable("MONGODB_URI", "User")
-$jwtSecret = [Environment]::GetEnvironmentVariable("JWT_SECRET", "User")
+function Import-DotEnv {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string] $Path
+  )
 
-if ([string]::IsNullOrWhiteSpace($mongoUri)) {
-  throw "MONGODB_URI is not set in User environment variables."
+  if (-not (Test-Path -Path $Path)) {
+    return
+  }
+
+  Get-Content -Path $Path | ForEach-Object {
+    $line = $_.Trim()
+    if (-not $line -or $line.StartsWith("#")) { return }
+    $idx = $line.IndexOf("=")
+    if ($idx -lt 1) { return }
+
+    $name = $line.Substring(0, $idx).Trim()
+    $value = $line.Substring($idx + 1).Trim().Trim("'").Trim('"')
+    if ($name) {
+      # Don't override existing env vars (User/Process)
+      if (-not (Test-Path -Path "Env:$name")) {
+        Set-Item -Path "Env:$name" -Value $value
+      }
+    }
+  }
 }
-if ([string]::IsNullOrWhiteSpace($jwtSecret)) {
-  throw "JWT_SECRET is not set in User environment variables."
+
+# Prefer User environment variables if present.
+$userMongoUri = [Environment]::GetEnvironmentVariable("MONGODB_URI", "User")
+$userJwtSecret = [Environment]::GetEnvironmentVariable("JWT_SECRET", "User")
+
+if (-not $env:MONGO_URI -and -not [string]::IsNullOrWhiteSpace($userMongoUri)) {
+  $env:MONGO_URI = $userMongoUri
+}
+if (-not $env:JWT_SECRET -and -not [string]::IsNullOrWhiteSpace($userJwtSecret)) {
+  $env:JWT_SECRET = $userJwtSecret
 }
 
-$env:MONGODB_URI = $mongoUri
-$env:JWT_SECRET = $jwtSecret
+# Ensure Spring sees the Mongo URI even if .env contains localhost defaults.
+if (-not [string]::IsNullOrWhiteSpace($userMongoUri)) {
+  $env:SPRING_DATA_MONGODB_URI = $userMongoUri
+}
 
-Write-Host "Loaded MONGODB_URI and JWT_SECRET from User environment variables." -ForegroundColor Green
+# Load project root .env (docker-compose style) so local mvn run works too.
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+Import-DotEnv -Path (Join-Path $projectRoot ".env")
+
+# Backward compatibility: some machines have these as User env vars.
+if (-not $env:MONGO_URI -and $env:MONGODB_URI) { $env:MONGO_URI = $env:MONGODB_URI }
+if (-not $env:JWT_SECRET) {
+  $env:JWT_SECRET = $userJwtSecret
+}
+
+if ([string]::IsNullOrWhiteSpace($env:MONGO_URI)) {
+  throw "MONGO_URI is not set. Add it to the project root .env (recommended) or set it as an environment variable."
+}
+if ([string]::IsNullOrWhiteSpace($env:JWT_SECRET)) {
+  throw "JWT_SECRET is not set. Add it to the project root .env (recommended) or set it as an environment variable."
+}
+
+# Spring Boot reads these environment variables automatically.
+$env:SPRING_DATA_MONGODB_URI = if (-not [string]::IsNullOrWhiteSpace($env:SPRING_DATA_MONGODB_URI)) { $env:SPRING_DATA_MONGODB_URI } else { $env:MONGO_URI }
+$env:APP_SECURITY_JWT_SECRET = $env:JWT_SECRET
+
+$mongoHostHint = if ($env:SPRING_DATA_MONGODB_URI -match "localhost:27017") { "localhost" } else { "remote/atlas" }
+Write-Host "Loaded backend env. Mongo=$mongoHostHint, root env=$projectRoot\.env" -ForegroundColor Green
 
 # Atlas host fallback map (used when local DNS is unstable on hotspot/router DNS).
 $atlasHostDefaults = [ordered]@{
@@ -69,10 +121,10 @@ if ([string]::IsNullOrWhiteSpace($env:JAVA_TOOL_OPTIONS)) {
 Write-Host "Using Java hosts override: $hostsFile" -ForegroundColor Yellow
 
 $port = if ($env:SERVER_PORT) { [int]$env:SERVER_PORT } else { 8080 }
-$listener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+$netstatOutput = netstat -ano | findstr "LISTENING" | findstr ":$port " | Select-Object -First 1
 
-if ($listener) {
-  $ownerPid = $listener.OwningProcess
+if ($netstatOutput) {
+  $ownerPid = ($netstatOutput.Trim() -split '\s+')[-1]
   $proc = Get-Process -Id $ownerPid -ErrorAction SilentlyContinue
 
   if ($proc -and $proc.ProcessName -eq "java") {

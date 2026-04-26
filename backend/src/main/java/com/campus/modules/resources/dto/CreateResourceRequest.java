@@ -16,6 +16,12 @@ public record CreateResourceRequest(
     @Positive(message = "Capacity must be greater than 0")
     Integer capacity,
 
-    ResourceStatus status
+    ResourceStatus status,
+
+    String availableDate,
+
+    String startTime,
+
+    String endTime
 ) {
 }

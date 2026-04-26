@@ -13,9 +13,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +40,13 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.ok("Users fetched", userService.listUsers()));
     }
 
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody com.campus.modules.users.dto.CreateUserRequest request) {
+        return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+            .body(ApiResponse.created("User created successfully", userService.createUser(request)));
+    }
+
     @PatchMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateRole(
@@ -48,6 +57,17 @@ public class UserController {
         User actor = (User) authentication.getPrincipal();
         UserResponse updated = userService.updateUserRole(id, actor.getId(), request);
         return ResponseEntity.ok(ApiResponse.ok("User role updated", updated));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+        @PathVariable String id,
+        Authentication authentication
+    ) {
+        User actor = (User) authentication.getPrincipal();
+        userService.deleteUser(id, actor.getId());
+        return ResponseEntity.ok(ApiResponse.ok("User deleted successfully", null));
     }
 
     // -------------------------------------------------------------------------

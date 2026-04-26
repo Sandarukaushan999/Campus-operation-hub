@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
+import {
+  getMyNotifications,
+  getMyUnreadNotificationCount,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "../../api/notificationApi";
 import "./Navbar.css";
 
 // =====================================================================
@@ -26,6 +32,9 @@ const Navbar = () => {
   // Which dropdown is open right now ("bookings", "tickets", or null).
   const [openMenu, setOpenMenu] = useState(null);
 
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+
   // Ref to the nav element so we can detect clicks outside it.
   const navRef = useRef(null);
 
@@ -33,6 +42,41 @@ const Navbar = () => {
   useEffect(() => {
     setOpenMenu(null);
   }, [location.pathname]);
+
+  // Poll unread count so the bell updates.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadCount(0);
+      setNotifications([]);
+      return;
+    }
+
+    let alive = true;
+    const tick = async () => {
+      try {
+        const count = await getMyUnreadNotificationCount();
+        if (alive) setUnreadCount(Number(count) || 0);
+      } catch {
+        // ignore; navbar should not break if notifications fail
+      }
+    };
+
+    tick();
+    const id = window.setInterval(tick, 5000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [isAuthenticated]);
+
+  const loadNotifications = async () => {
+    try {
+      const list = await getMyNotifications(8);
+      setNotifications(Array.isArray(list) ? list : []);
+    } catch {
+      setNotifications([]);
+    }
+  };
 
   // Close on click outside or Escape key.
   useEffect(() => {
@@ -196,6 +240,80 @@ const Navbar = () => {
         {/* Right side - user info or login links */}
         {isAuthenticated ? (
           <div className="nav-user">
+            {/* Notifications bell */}
+            <div className="nav-dropdown">
+              <button
+                type="button"
+                className={`nav-link nav-notify-btn${openMenu === "notifications" ? " is-open" : ""}`}
+                onClick={async () => {
+                  const next = openMenu === "notifications" ? null : "notifications";
+                  setOpenMenu(next);
+                  if (next === "notifications") {
+                    await loadNotifications();
+                  }
+                }}
+                aria-haspopup="true"
+                aria-expanded={openMenu === "notifications"}
+                title="Notifications"
+              >
+                <span className="nav-link-icon">🔔</span>
+                {unreadCount > 0 && <span className="nav-notify-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>}
+              </button>
+
+              {openMenu === "notifications" && (
+                <div className="nav-dropdown-panel nav-notify-panel" role="menu">
+                  <div className="nav-notify-header">
+                    <span className="nav-notify-title">Notifications</span>
+                    <button
+                      type="button"
+                      className="nav-notify-action"
+                      onClick={async () => {
+                        try {
+                          await markAllNotificationsRead();
+                          setUnreadCount(0);
+                          setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+                        } finally {
+                          // keep panel open
+                        }
+                      }}
+                    >
+                      Mark all read
+                    </button>
+                  </div>
+
+                  {notifications.length === 0 ? (
+                    <div className="nav-notify-empty">No notifications yet.</div>
+                  ) : (
+                    <div className="nav-notify-list">
+                      {notifications.map((n) => (
+                        <button
+                          key={n.id}
+                          type="button"
+                          className={`nav-notify-item${n.read ? "" : " is-unread"}`}
+                          onClick={async () => {
+                            if (!n.read) {
+                              try {
+                                await markNotificationRead(n.id);
+                                setNotifications((prev) =>
+                                  prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)),
+                                );
+                                setUnreadCount((c) => Math.max(0, (Number(c) || 0) - 1));
+                              } catch {
+                                // ignore
+                              }
+                            }
+                          }}
+                        >
+                          <div className="nav-notify-item-title">{n.title}</div>
+                          <div className="nav-notify-item-message">{n.message}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <Link
               to="/profile"
               className="nav-user-profile-link"

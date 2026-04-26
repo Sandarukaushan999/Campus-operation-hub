@@ -19,8 +19,10 @@ import com.campus.modules.bookings.dto.CancelBookingRequest;
 import com.campus.modules.bookings.dto.CreateBookingRequest;
 import com.campus.modules.bookings.dto.RejectBookingRequest;
 import com.campus.modules.bookings.dto.TimeSlotResponse;
+import com.campus.modules.tickets.notify.NotificationPublisher;
 import com.campus.repository.BookingRepository;
 import com.campus.repository.ResourceRepository;
+import com.campus.repository.UserRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -49,6 +51,8 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final ResourceRepository resourceRepository;
+    private final UserRepository userRepository;
+    private final NotificationPublisher notificationPublisher;
 
     @Override
     public BookingResponse createBooking(String userId, CreateBookingRequest request) {
@@ -94,7 +98,17 @@ public class BookingServiceImpl implements BookingService {
             .updatedAt(now)
             .build();
 
-        return toResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        // Notify all admins that a new booking is waiting for approval.
+        userRepository.findByRole(UserRole.ADMIN).forEach(admin -> notificationPublisher.notify(
+            admin.getId(),
+            "BOOKING_REQUESTED",
+            "New booking request",
+            "A user requested: " + saved.getTitle() + " on " + saved.getDate() + " (" + saved.getStartTime() + "-" + saved.getEndTime() + ")"
+        ));
+
+        return toResponse(saved);
     }
 
     @Override
@@ -138,7 +152,17 @@ public class BookingServiceImpl implements BookingService {
         booking.setApproverId(approverId);
         booking.setUpdatedAt(Instant.now());
 
-        return toResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        // Notify the user that their booking was approved.
+        notificationPublisher.notify(
+            saved.getUserId(),
+            "BOOKING_APPROVED",
+            "Booking confirmed",
+            "Your booking is approved: " + saved.getTitle() + " on " + saved.getDate() + " (" + saved.getStartTime() + "-" + saved.getEndTime() + ")"
+        );
+
+        return toResponse(saved);
     }
 
     @Override

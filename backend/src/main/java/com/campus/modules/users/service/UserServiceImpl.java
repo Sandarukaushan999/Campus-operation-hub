@@ -8,6 +8,7 @@ import com.campus.modules.users.dto.ChangePasswordRequest;
 import com.campus.modules.users.dto.UpdateProfileRequest;
 import com.campus.modules.users.dto.UpdateUserRoleRequest;
 import com.campus.modules.users.dto.UserResponse;
+import com.campus.modules.tickets.notify.NotificationPublisher;
 import com.campus.repository.UserRepository;
 import java.time.Instant;
 import java.util.Comparator;
@@ -22,6 +23,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationPublisher notificationPublisher;
 
     // -------------------------------------------------------------------------
     // Admin operations
@@ -34,6 +36,27 @@ public class UserServiceImpl implements UserService {
             .sorted(Comparator.comparing(User::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
             .map(this::toResponse)
             .toList();
+    }
+
+    @Override
+    public UserResponse createUser(com.campus.modules.users.dto.CreateUserRequest request) {
+        String normalizedEmail = request.email().trim().toLowerCase();
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new com.campus.common.exception.ConflictException("Email is already registered");
+        }
+
+        Instant now = Instant.now();
+        User user = User.builder()
+            .fullName(request.fullName().trim())
+            .email(normalizedEmail)
+            .password(passwordEncoder.encode(request.password()))
+            .role(request.role() != null ? request.role() : UserRole.USER)
+            .enabled(true)
+            .createdAt(now)
+            .updatedAt(now)
+            .build();
+
+        return toResponse(userRepository.save(user));
     }
 
     @Override
@@ -51,10 +74,41 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(targetUserId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        UserRole from = user.getRole();
+        UserRole to = request.role();
+
         user.setRole(request.role());
         user.setUpdatedAt(Instant.now());
 
-        return toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+
+        // Notify the user that their role changed (simple in-app notification).
+        if (from != to) {
+            notificationPublisher.notify(
+                saved.getId(),
+                "USER_ROLE_CHANGED",
+                "Your role was updated",
+                "Your account role changed from " + from.name() + " to " + to.name()
+            );
+        }
+
+        return toResponse(saved);
+    }
+
+    @Override
+    public void deleteUser(String targetUserId, String actorUserId) {
+        if (targetUserId == null || targetUserId.isBlank()) {
+            throw new BadRequestException("User id is required");
+        }
+        if (targetUserId.equals(actorUserId)) {
+            throw new BadRequestException("You cannot delete your own account");
+        }
+
+        if (!userRepository.existsById(targetUserId)) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        userRepository.deleteById(targetUserId);
     }
 
     // -------------------------------------------------------------------------

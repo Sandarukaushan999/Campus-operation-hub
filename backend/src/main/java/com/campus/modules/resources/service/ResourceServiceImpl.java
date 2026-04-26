@@ -7,7 +7,10 @@ import com.campus.domain.Resource;
 import com.campus.modules.resources.dto.CreateResourceRequest;
 import com.campus.modules.resources.dto.ResourceResponse;
 import com.campus.modules.resources.dto.UpdateResourceRequest;
+import com.campus.modules.tickets.notify.NotificationPublisher;
 import com.campus.repository.ResourceRepository;
+import com.campus.repository.UserRepository;
+import com.campus.domain.User;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -19,6 +22,8 @@ import org.springframework.stereotype.Service;
 public class ResourceServiceImpl implements ResourceService {
 
     private final ResourceRepository resourceRepository;
+    private final UserRepository userRepository;
+    private final NotificationPublisher notificationPublisher;
 
     @Override
     public ResourceResponse create(CreateResourceRequest request) {
@@ -30,11 +35,27 @@ public class ResourceServiceImpl implements ResourceService {
             .location(request.location().trim())
             .capacity(request.capacity())
             .status(request.status() == null ? ResourceStatus.AVAILABLE : request.status())
+            .availableDate(request.availableDate())
+            .startTime(request.startTime())
+            .endTime(request.endTime())
             .createdAt(now)
             .updatedAt(now)
             .build();
 
-        return toResponse(resourceRepository.save(resource));
+        Resource saved = resourceRepository.save(resource);
+
+        // Notify all users about the new resource
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            notificationPublisher.notify(
+                user.getId(),
+                "RESOURCE_ADDED",
+                "New Resource Added",
+                "A new resource '" + saved.getName() + "' is now available at " + saved.getLocation() + "."
+            );
+        }
+
+        return toResponse(saved);
     }
 
     @Override
@@ -59,8 +80,33 @@ public class ResourceServiceImpl implements ResourceService {
             resource.setStatus(request.status());
         }
 
+        if (request.availableDate() != null) {
+            resource.setAvailableDate(request.availableDate());
+        }
+
+        if (request.startTime() != null) {
+            resource.setStartTime(request.startTime());
+        }
+
+        if (request.endTime() != null) {
+            resource.setEndTime(request.endTime());
+        }
+
         resource.setUpdatedAt(Instant.now());
-        return toResponse(resourceRepository.save(resource));
+        Resource saved = resourceRepository.save(resource);
+
+        // Notify all users about the updated resource
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            notificationPublisher.notify(
+                user.getId(),
+                "RESOURCE_UPDATED",
+                "Resource Updated",
+                "The resource '" + saved.getName() + "' has been updated."
+            );
+        }
+
+        return toResponse(saved);
     }
 
     @Override
@@ -79,6 +125,14 @@ public class ResourceServiceImpl implements ResourceService {
         return toResponse(resource);
     }
 
+    @Override
+    public void delete(String id) {
+        if (!resourceRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Resource not found");
+        }
+        resourceRepository.deleteById(id);
+    }
+
     private ResourceResponse toResponse(Resource resource) {
         return new ResourceResponse(
             resource.getId(),
@@ -86,6 +140,9 @@ public class ResourceServiceImpl implements ResourceService {
             resource.getLocation(),
             resource.getCapacity(),
             resource.getStatus(),
+            resource.getAvailableDate(),
+            resource.getStartTime(),
+            resource.getEndTime(),
             resource.getCreatedAt(),
             resource.getUpdatedAt()
         );

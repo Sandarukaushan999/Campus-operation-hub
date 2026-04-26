@@ -3,11 +3,13 @@ package com.campus.security;
 import com.campus.common.response.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,6 +35,9 @@ public class SecurityConfig {
     private final CorsConfigurationSource corsConfigurationSource;
     private final ObjectMapper objectMapper;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+
+    @Value("${app.oauth2.redirect-uri:http://localhost:5173/oauth2/callback}")
+    private String oauth2RedirectUri;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -96,13 +101,23 @@ public class SecurityConfig {
                 .failureHandler((request, response, exception) -> {
                     System.err.println("=== OAUTH2 LOGIN FAILED ===");
                     exception.printStackTrace();
-                    response.sendRedirect("http://localhost:5174/login?error=oauth_failed");
+                    response.sendRedirect(buildFrontendLoginUrl(oauth2RedirectUri));
                 })
             )
 
             // ── JWT filter (existing email/password flow) ──────────────────────
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
+    }
+
+    private static String buildFrontendLoginUrl(String oauth2RedirectUri) {
+        try {
+            URI uri = URI.create(oauth2RedirectUri);
+            String base = uri.getScheme() + "://" + uri.getAuthority();
+            return base + "/login?error=oauth_failed";
+        } catch (Exception ignored) {
+            return "http://localhost:5173/login?error=oauth_failed";
+        }
     }
 
     @Bean

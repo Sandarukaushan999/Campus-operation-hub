@@ -19,3 +19,8 @@ export const updateResource = async (id, payload) => {
   const response = await api.put(`/resources/${id}`, payload);
   return response.data.data;
 };
+
+export const deleteResource = async (id) => {
+  const response = await api.delete(`/resources/${id}`);
+  return response.data;
+};

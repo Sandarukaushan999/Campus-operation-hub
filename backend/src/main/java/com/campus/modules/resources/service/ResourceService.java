@@ -14,4 +14,6 @@ public interface ResourceService {
     List<ResourceResponse> findAll();
 
     ResourceResponse findById(String id);
+
+    void delete(String id);
 }
