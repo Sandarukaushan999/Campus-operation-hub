@@ -10,3 +10,17 @@ export const updateUserRole = async (id, role) => {
   return response.data.data;
 };
 
+export const getProfile = async () => {
+  const response = await api.get("/users/me");
+  return response.data.data;
+};
+
+export const updateProfile = async (data) => {
+  const response = await api.put("/users/me", data);
+  return response.data.data;
+};
+
+export const changePassword = async (data) => {
+  const response = await api.put("/users/change-password", data);
+  return response.data;
+};

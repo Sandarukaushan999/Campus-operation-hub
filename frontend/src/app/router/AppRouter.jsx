@@ -17,6 +17,7 @@ import TicketDetailsPage from "../../features/tickets/pages/TicketDetailsPage";
 import TicketListPage from "../../features/tickets/pages/TicketListPage";
 import AssignedTicketsPage from "../../features/tickets/pages/AssignedTicketsPage";
 import AdminUsersPage from "../../features/admin/pages/AdminUsersPage";
+import ProfilePage from "../../features/auth/pages/ProfilePage";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -74,6 +75,7 @@ const AppRouter = () => (
     >
       <Route index element={<Navigate to="/dashboard" replace />} />
       <Route path="dashboard" element={<UserDashboard />} />
+      <Route path="profile" element={<ProfilePage />} />
       <Route path="resources" element={<ResourceListPage />} />
       <Route
         path="resources/create"

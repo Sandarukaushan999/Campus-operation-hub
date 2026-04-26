@@ -196,11 +196,18 @@ const Navbar = () => {
         {/* Right side - user info or login links */}
         {isAuthenticated ? (
           <div className="nav-user">
-            <div className="nav-user-info">
-              <span className="nav-user-name">{user?.fullName}</span>
-              <span className="nav-user-role">{user?.role}</span>
-            </div>
-            <div className="nav-avatar">{initial}</div>
+            <Link
+              to="/profile"
+              className="nav-user-profile-link"
+              title="View your profile"
+              style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", color: "inherit" }}
+            >
+              <div className="nav-user-info">
+                <span className="nav-user-name">{user?.fullName}</span>
+                <span className="nav-user-role">{user?.role}</span>
+              </div>
+              <div className="nav-avatar" style={{ cursor: "pointer" }}>{initial}</div>
+            </Link>
             <button className="nav-logout-btn" onClick={onLogout} type="button">
               Logout
             </button>
