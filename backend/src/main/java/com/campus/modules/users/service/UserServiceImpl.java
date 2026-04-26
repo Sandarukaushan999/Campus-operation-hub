@@ -4,6 +4,8 @@ import com.campus.common.enums.UserRole;
 import com.campus.common.exception.BadRequestException;
 import com.campus.common.exception.ResourceNotFoundException;
 import com.campus.domain.User;
+import com.campus.modules.users.dto.ChangePasswordRequest;
+import com.campus.modules.users.dto.UpdateProfileRequest;
 import com.campus.modules.users.dto.UpdateUserRoleRequest;
 import com.campus.modules.users.dto.UserResponse;
 import com.campus.repository.UserRepository;
@@ -11,6 +13,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,6 +21,11 @@ import org.springframework.stereotype.Service;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    // -------------------------------------------------------------------------
+    // Admin operations
+    // -------------------------------------------------------------------------
 
     @Override
     public List<UserResponse> listUsers() {
@@ -36,7 +44,6 @@ public class UserServiceImpl implements UserService {
         if (request == null || request.role() == null) {
             throw new BadRequestException("Role is required");
         }
-
         if (targetUserId.equals(actorUserId) && request.role() != UserRole.ADMIN) {
             throw new BadRequestException("You cannot remove your own admin role");
         }
@@ -50,10 +57,61 @@ public class UserServiceImpl implements UserService {
         return toResponse(userRepository.save(user));
     }
 
+    // -------------------------------------------------------------------------
+    // Profile management (any authenticated user, own data only)
+    // -------------------------------------------------------------------------
+
+    @Override
+    public UserResponse getProfile(String userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return toResponse(user);
+    }
+
+    @Override
+    public UserResponse updateProfile(String userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Role is intentionally NOT touched here
+        user.setFullName(request.fullName().trim());
+
+        String phone = request.phone();
+        user.setPhone(phone == null ? null : phone.trim());
+
+        user.setUpdatedAt(Instant.now());
+
+        return toResponse(userRepository.save(user));
+    }
+
+    @Override
+    public void changePassword(String userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Verify the user knows their current password before allowing a change
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
+            throw new BadRequestException("Old password is incorrect");
+        }
+
+        if (request.oldPassword().equals(request.newPassword())) {
+            throw new BadRequestException("New password must be different from the old password");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        user.setUpdatedAt(Instant.now());
+        userRepository.save(user);
+    }
+
+    // -------------------------------------------------------------------------
+    // Mapper - password is never included (field is @JsonIgnore on entity anyway)
+    // -------------------------------------------------------------------------
+
     private UserResponse toResponse(User user) {
         return new UserResponse(
             user.getId(),
             user.getFullName(),
+            user.getPhone(),
             user.getEmail(),
             user.getRole(),
             user.isEnabled(),
@@ -62,4 +120,3 @@ public class UserServiceImpl implements UserService {
         );
     }
 }
-

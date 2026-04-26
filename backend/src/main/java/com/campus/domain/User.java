@@ -28,6 +28,8 @@ public class User implements UserDetails {
 
     private String fullName;
 
+    private String phone;
+
     @Indexed(unique = true)
     private String email;
 
