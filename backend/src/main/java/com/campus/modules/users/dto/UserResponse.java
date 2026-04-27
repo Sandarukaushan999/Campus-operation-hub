@@ -10,6 +10,7 @@ public record UserResponse(
     String email,
     UserRole role,
     boolean enabled,
+    java.util.Map<String, Boolean> notificationPreferences,
     Instant createdAt,
     Instant updatedAt
 ) {

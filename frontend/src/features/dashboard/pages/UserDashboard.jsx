@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import useAuth from "../../../hooks/useAuth";
+import AdminAnalyticsPage from "../../admin/pages/AdminAnalyticsPage";
 
 const UserDashboard = () => {
   const { user } = useAuth();
@@ -28,6 +29,14 @@ const UserDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Render Analytics directly in the dashboard for Admins */}
+      {user?.role === "ADMIN" && (
+        <div style={{ marginTop: "20px" }}>
+          <hr style={{ border: "0", borderTop: "1px solid var(--border)", margin: "20px 0" }} />
+          <AdminAnalyticsPage />
+        </div>
+      )}
     </section>
   );
 };

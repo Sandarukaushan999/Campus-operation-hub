@@ -15,6 +15,8 @@ public record UpdateProfileRequest(
         regexp = "^$|^[+]?[0-9\\s\\-().]{7,20}$",
         message = "Phone number is invalid"
     )
-    String phone
+    String phone,
+
+    java.util.Map<String, Boolean> notificationPreferences
 ) {
 }

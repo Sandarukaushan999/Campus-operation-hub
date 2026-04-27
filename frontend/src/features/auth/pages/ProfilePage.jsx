@@ -7,7 +7,15 @@ const ProfilePage = () => {
   const [error, setError] = useState("");
 
   // Edit profile form state
-  const [editForm, setEditForm] = useState({ fullName: "", phone: "" });
+  const [editForm, setEditForm] = useState({ 
+    fullName: "", 
+    phone: "",
+    notificationPreferences: {
+      BOOKING: true,
+      TICKET: true,
+      GENERAL: true,
+    }
+  });
   const [editSuccess, setEditSuccess] = useState("");
   const [editError, setEditError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
@@ -22,7 +30,15 @@ const ProfilePage = () => {
     getProfile()
       .then((data) => {
         setProfile(data);
-        setEditForm({ fullName: data.fullName ?? "", phone: data.phone ?? "" });
+        setEditForm({ 
+          fullName: data.fullName ?? "", 
+          phone: data.phone ?? "",
+          notificationPreferences: {
+            BOOKING: data.notificationPreferences?.BOOKING ?? true,
+            TICKET: data.notificationPreferences?.TICKET ?? true,
+            GENERAL: data.notificationPreferences?.GENERAL ?? true,
+          }
+        });
       })
       .catch(() => setError("Failed to load profile."))
       .finally(() => setLoading(false));
@@ -151,6 +167,36 @@ const ProfilePage = () => {
               value={editForm.phone}
               onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
             />
+          </div>
+          
+          <div className="form-field" style={{ gridColumn: "1 / -1" }}>
+            <h4 style={{ marginBottom: "10px", borderBottom: "1px solid var(--border)", paddingBottom: "5px" }}>Notification Preferences</h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                <input 
+                  type="checkbox" 
+                  checked={editForm.notificationPreferences.BOOKING}
+                  onChange={(e) => setEditForm(p => ({ ...p, notificationPreferences: { ...p.notificationPreferences, BOOKING: e.target.checked } }))}
+                />
+                Receive Booking Updates
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                <input 
+                  type="checkbox" 
+                  checked={editForm.notificationPreferences.TICKET}
+                  onChange={(e) => setEditForm(p => ({ ...p, notificationPreferences: { ...p.notificationPreferences, TICKET: e.target.checked } }))}
+                />
+                Receive Ticket Updates
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                <input 
+                  type="checkbox" 
+                  checked={editForm.notificationPreferences.GENERAL}
+                  onChange={(e) => setEditForm(p => ({ ...p, notificationPreferences: { ...p.notificationPreferences, GENERAL: e.target.checked } }))}
+                />
+                Receive General & Resource Updates
+              </label>
+            </div>
           </div>
           <button className="btn btn-primary" type="submit" disabled={editLoading}>
             {editLoading ? "Saving…" : "Save Changes"}

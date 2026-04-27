@@ -11,6 +11,7 @@ import MyBookingsPage from "../../features/bookings/pages/MyBookingsPage";
 import BookingListPage from "../../features/bookings/pages/BookingListPage";
 import CreateBookingPage from "../../features/bookings/pages/CreateBookingPage";
 import BookingDetailsPage from "../../features/bookings/pages/BookingDetailsPage";
+import BookingVerifyPage from "../../features/bookings/pages/BookingVerifyPage";
 // Module C - tickets
 import MyTicketsPage from "../../features/tickets/pages/MyTicketsPage";
 import CreateTicketPage from "../../features/tickets/pages/CreateTicketPage";
@@ -18,6 +19,7 @@ import TicketDetailsPage from "../../features/tickets/pages/TicketDetailsPage";
 import TicketListPage from "../../features/tickets/pages/TicketListPage";
 import AssignedTicketsPage from "../../features/tickets/pages/AssignedTicketsPage";
 import AdminUsersPage from "../../features/admin/pages/AdminUsersPage";
+import AdminAnalyticsPage from "../../features/admin/pages/AdminAnalyticsPage";
 import ProfilePage from "../../features/auth/pages/ProfilePage";
 import OAuth2CallbackPage from "../../features/auth/pages/OAuth2CallbackPage";
 
@@ -100,6 +102,7 @@ const AppRouter = () => (
       <Route path="bookings/my" element={<MyBookingsPage />} />
       <Route path="bookings/create" element={<CreateBookingPage />} />
       <Route path="bookings/:id" element={<BookingDetailsPage />} />
+      <Route path="bookings/:id/verify" element={<BookingVerifyPage />} />
       <Route
         path="bookings"
         element={
@@ -114,6 +117,15 @@ const AppRouter = () => (
         element={
           <AdminRoute>
             <AdminUsersPage />
+          </AdminRoute>
+        }
+      />
+      
+      <Route
+        path="admin/analytics"
+        element={
+          <AdminRoute>
+            <AdminAnalyticsPage />
           </AdminRoute>
         }
       />

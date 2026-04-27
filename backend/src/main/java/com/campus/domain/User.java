@@ -48,6 +48,9 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean enabled = true;
 
+    @Builder.Default
+    private java.util.Map<String, Boolean> notificationPreferences = new java.util.HashMap<>();
+
     private Instant createdAt;
 
     private Instant updatedAt;

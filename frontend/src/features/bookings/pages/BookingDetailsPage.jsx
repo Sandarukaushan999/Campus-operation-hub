@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 import { cancelBooking, getBookingById } from "../../../api/bookingApi";
 
 const statusClass = (status) => {
@@ -72,12 +73,27 @@ const BookingDetailsPage = () => {
         {error && <div className="alert alert-error">{error}</div>}
 
         <div className="grid" style={{ marginTop: 12 }}>
-          <p><strong>Resource:</strong> {booking.resourceId}</p>
-          <p><strong>User:</strong> {booking.userId}</p>
-          <p><strong>Date:</strong> {booking.date}</p>
-          <p><strong>Time:</strong> {booking.startTime} - {booking.endTime}</p>
-          <p><strong>Purpose:</strong> {booking.purpose || "N/A"}</p>
-          <p><strong>Rejection Reason:</strong> {booking.rejectionReason || "N/A"}</p>
+          <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: "250px" }}>
+              <p><strong>Resource:</strong> {booking.resourceId}</p>
+              <p><strong>User:</strong> {booking.userId}</p>
+              <p><strong>Date:</strong> {booking.date}</p>
+              <p><strong>Time:</strong> {booking.startTime} - {booking.endTime}</p>
+              <p><strong>Purpose:</strong> {booking.purpose || "N/A"}</p>
+              <p><strong>Rejection Reason:</strong> {booking.rejectionReason || "N/A"}</p>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", background: "var(--bg-glass)", borderRadius: "12px", border: "1px solid var(--border)" }}>
+              <QRCodeSVG 
+                value={`${window.location.origin}/bookings/${booking.id}/verify`} 
+                size={150} 
+                level={"M"}
+                includeMargin={true}
+                style={{ borderRadius: "8px" }}
+              />
+              <p style={{ marginTop: "10px", fontSize: "0.8rem", opacity: 0.8 }}>Scan to verify</p>
+            </div>
+          </div>
         </div>
 
         <div className="row" style={{ marginTop: 10 }}>

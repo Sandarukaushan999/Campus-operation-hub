@@ -133,6 +133,10 @@ public class UserServiceImpl implements UserService {
         String phone = request.phone();
         user.setPhone(phone == null ? null : phone.trim());
 
+        if (request.notificationPreferences() != null) {
+            user.setNotificationPreferences(request.notificationPreferences());
+        }
+
         user.setUpdatedAt(Instant.now());
 
         return toResponse(userRepository.save(user));
@@ -169,6 +173,7 @@ public class UserServiceImpl implements UserService {
             user.getEmail(),
             user.getRole(),
             user.isEnabled(),
+            user.getNotificationPreferences(),
             user.getCreatedAt(),
             user.getUpdatedAt()
         );
