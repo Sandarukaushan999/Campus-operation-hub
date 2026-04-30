@@ -19,8 +19,12 @@ function Import-DotEnv {
     $name = $line.Substring(0, $idx).Trim()
     $value = $line.Substring($idx + 1).Trim().Trim("'").Trim('"')
     if ($name) {
-      # Don't override existing env vars (User/Process)
-      if (-not (Test-Path -Path "Env:$name")) {
+      # Always refresh CORS/OAuth-related vars from project .env so frontend
+      # port changes (5173/5174) are picked up immediately on each run.
+      if ($name -in @("APP_CORS_ALLOWED_ORIGINS", "OAUTH2_REDIRECT_URI", "VITE_API_BASE_URL")) {
+        Set-Item -Path "Env:$name" -Value $value
+      } elseif (-not (Test-Path -Path "Env:$name")) {
+        # Default behavior: don't override already-defined env vars.
         Set-Item -Path "Env:$name" -Value $value
       }
     }

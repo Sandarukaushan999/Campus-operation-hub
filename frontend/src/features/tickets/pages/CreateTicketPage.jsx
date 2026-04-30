@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createTicket } from "../../../api/ticketApi";
 import { getResources } from "../../../api/resourceApi";
+import CustomSelect from "../../../components/common/CustomSelect";
 import "../tickets.css";
 
 // Hard limits we share with the backend (FileStorageService and TicketServiceImpl).
@@ -160,23 +161,23 @@ const CreateTicketPage = () => {
             <div className="tk-form-grid">
               <div className="tk-field">
                 <label className="tk-field-label" htmlFor="resourceId">Resource (optional)</label>
-                <select
+                <CustomSelect
                   id="resourceId"
                   className="tk-select"
                   value={form.resourceId}
-                  onChange={(e) => onField("resourceId", e.target.value)}
+                  onChange={(val) => onField("resourceId", val)}
                   disabled={resources.length === 0}
-                >
-                  <option value="" disabled hidden>
-                    {resources.length === 0 ? "No resources available" : "Select a resource..."}
-                  </option>
-                  <option value="">— None / use location instead —</option>
-                  {resources.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name} — {r.location}</option>
-                  ))}
-                </select>
+                  placeholder={resources.length === 0 ? "No resources available" : "Select a resource..."}
+                  options={[
+                    { value: "", label: "— None / use location instead —" },
+                    ...resources.map((r) => ({
+                      value: r.id,
+                      label: `${r.name} — ${r.location}`
+                    }))
+                  ]}
+                />
                 {resources.length === 0 && (
-                  <small style={{ color: "var(--muted)", fontSize: 12 }}>
+                  <small style={{ color: "var(--muted)", fontSize: 12, marginTop: 4, display: 'block' }}>
                     No resources in the system yet. Type a location on the right instead.
                   </small>
                 )}
@@ -227,30 +228,32 @@ const CreateTicketPage = () => {
             <div className="tk-form-grid">
               <div className="tk-field">
                 <label className="tk-field-label" htmlFor="category">Category</label>
-                <select
+                <CustomSelect
                   id="category"
                   className="tk-select"
                   value={form.category}
-                  onChange={(e) => onField("category", e.target.value)}
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>{c.icon}  {c.label}</option>
-                  ))}
-                </select>
+                  onChange={(val) => onField("category", val)}
+                  options={CATEGORIES.map((c) => ({
+                    value: c.value,
+                    label: (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{c.icon}</span>
+                        <span>{c.label}</span>
+                      </span>
+                    )
+                  }))}
+                />
               </div>
 
               <div className="tk-field">
                 <label className="tk-field-label" htmlFor="priority">Priority</label>
-                <select
+                <CustomSelect
                   id="priority"
                   className="tk-select"
                   value={form.priority}
-                  onChange={(e) => onField("priority", e.target.value)}
-                >
-                  {PRIORITIES.map((p) => (
-                    <option key={p.value} value={p.value}>{p.label}</option>
-                  ))}
-                </select>
+                  onChange={(val) => onField("priority", val)}
+                  options={PRIORITIES}
+                />
               </div>
             </div>
           </div>

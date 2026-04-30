@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -52,6 +53,20 @@ public class NotificationController {
         User user = (User) authentication.getPrincipal();
         notificationService.markAllRead(user.getId());
         return ResponseEntity.ok(ApiResponse.ok("All notifications marked read", null));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteOne(@PathVariable String id, Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        notificationService.deleteOne(id, user.getId());
+        return ResponseEntity.ok(ApiResponse.ok("Notification deleted", null));
+    }
+
+    @DeleteMapping("/my")
+    public ResponseEntity<ApiResponse<Void>> deleteAll(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        notificationService.deleteAll(user.getId());
+        return ResponseEntity.ok(ApiResponse.ok("All notifications deleted", null));
     }
 }
 

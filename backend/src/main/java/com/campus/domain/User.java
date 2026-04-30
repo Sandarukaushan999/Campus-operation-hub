@@ -30,6 +30,8 @@ public class User implements UserDetails {
 
     private String phone;
 
+    private String profileImageUrl;
+
     // OAuth2 provider info ("local" for email/password users, "google" for OAuth users)
     @Builder.Default
     private String provider = "local";

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { cancelBooking, getMyBookings } from "../../../api/bookingApi";
+import CustomSelect from "../../../components/common/CustomSelect";
 
 const statusClass = (status) => {
   if (status === "APPROVED") return "status-pill is-approved";
@@ -256,17 +257,18 @@ const MyBookingsPage = () => {
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
-          <select
+          <CustomSelect
             className="input bookings-status-select"
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
+            onChange={(val) => setStatusFilter(val)}
+            options={[
+              { value: "ALL", label: "All Statuses" },
+              { value: "PENDING", label: "Pending" },
+              { value: "APPROVED", label: "Approved" },
+              { value: "REJECTED", label: "Rejected" },
+              { value: "CANCELLED", label: "Cancelled" }
+            ]}
+          />
           <button type="button" className="btn btn-light" onClick={clearFilters}>
             Reset
           </button>

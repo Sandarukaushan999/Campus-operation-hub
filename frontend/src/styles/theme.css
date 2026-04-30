@@ -1,16 +1,32 @@
 :root {
-  --bg: #f2f5f8;
-  --surface: #ffffff;
-  --surface-2: #e8eef4;
-  --text: #163047;
-  --muted: #5a7389;
-  --primary: #0b6aa2;
-  --primary-strong: #085782;
-  --danger: #b42318;
-  --success: #157347;
-  --warning: #b57f00;
-  --border: #cbd7e2;
-  --radius: 14px;
-  --shadow: 0 12px 28px rgba(14, 46, 73, 0.12);
-  --font-main: "Segoe UI", "Trebuchet MS", "Verdana", sans-serif;
+  /* Neutral foundation (calm, high contrast) */
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-2: #F1F5F9;
+  --text: #0F172A;
+  --muted: #475569;
+  --border: #E2E8F0;
+
+  /* Brand (professional “campus” blue) */
+  --primary: #2563EB;
+  --primary-strong: #1D4ED8;
+
+  /* Semantic */
+  --danger: #DC2626;
+  --success: #16A34A;
+  --warning: #F59E0B;
+
+  /* UI helpers */
+  --ring: rgba(37, 99, 235, 0.35);
+  
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  
+  --shadow-sm: 0 2px 10px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.12);
+  --shadow-xl: 0 26px 60px rgba(15, 23, 42, 0.14);
+  
+  --font-main: "Inter", "Roboto", "Segoe UI", sans-serif;
 }

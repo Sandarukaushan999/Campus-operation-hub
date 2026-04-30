@@ -7,6 +7,7 @@ public record UserResponse(
     String id,
     String fullName,
     String phone,
+    String profileImageUrl,
     String email,
     UserRole role,
     boolean enabled,

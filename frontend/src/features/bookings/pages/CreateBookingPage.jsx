@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createBooking, getBookingAvailability } from "../../../api/bookingApi";
+import CustomSelect from "../../../components/common/CustomSelect";
 import { getResources } from "../../../api/resourceApi";
 
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -268,14 +269,391 @@ const CreateBookingPage = () => {
     }
   };
 
+  const groupSlots = () => {
+    const morning = [];
+    const afternoon = [];
+    const evening = [];
+
+    daySlots.forEach(slot => {
+      const hour = parseInt(slot.startTime.split(':')[0], 10);
+      const key = slotKey(slot.startTime, slot.endTime);
+      const isPastTimeToday = form.date === todayKey && slot.startTime <= currentTimeKey;
+      const isAvailable = availableSlotKeySet.has(key) && !isPastTimeToday;
+      const isTaken = !isAvailable;
+      const active = isAvailable && form.startTime === slot.startTime && form.endTime === slot.endTime;
+      
+      const slotData = { ...slot, key, isAvailable, isPastTimeToday, isTaken, active };
+
+      if (hour < 12) morning.push(slotData);
+      else if (hour < 17) afternoon.push(slotData);
+      else evening.push(slotData);
+    });
+
+    return { morning, afternoon, evening };
+  };
+
+  const { morning, afternoon, evening } = groupSlots();
+
   return (
-    <section className="grid booking-create-layout">
-      <div className="card">
-        <div className="spread">
-          <h2>Schedule Booking</h2>
-          <div className="row">
+    <section className="modern-booking-page" style={{ padding: '32px 24px 64px', backgroundColor: '#F8FAFC', minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
+      <style>{`
+        .modern-booking-layout {
+          max-width: 1200px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 420px minmax(0, 1fr);
+          gap: 32px;
+          align-items: start;
+        }
+        
+        .modern-booking-header {
+          max-width: 1200px;
+          margin: 0 auto 24px auto;
+        }
+        .modern-booking-header h1 {
+          font-size: 28px;
+          font-weight: 800;
+          color: #0F172A;
+          margin: 0 0 4px 0;
+          letter-spacing: -0.02em;
+        }
+        .modern-booking-header p {
+          font-size: 15px;
+          color: #64748B;
+          margin: 0;
+        }
+
+        .booking-card {
+          background: #FFFFFF;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+          border: 1px solid #E2E8F0;
+          padding: 24px;
+          overflow: hidden;
+        }
+
+        .calendar-controls {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+        .calendar-controls strong {
+          font-size: 15px;
+          font-weight: 700;
+          color: #0F172A;
+        }
+        .cal-btn {
+          background: #F1F5F9;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 6px;
+          color: #334155;
+          font-weight: 600;
+          font-size: 12px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .cal-btn:hover:not(:disabled) {
+          background: #E2E8F0;
+          color: #0F172A;
+        }
+        .cal-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .modern-calendar-weekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+          margin-bottom: 8px;
+          text-align: center;
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748B;
+          text-transform: uppercase;
+        }
+        
+        .modern-calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, minmax(0, 1fr));
+          gap: 4px;
+        }
+
+        .modern-calendar-cell {
+          min-height: 54px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          border: 1px solid transparent;
+          background: #FFFFFF;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          padding: 6px 2px;
+        }
+        .modern-calendar-cell:hover:not(:disabled):not(.is-selected) {
+          background: #EFF6FF;
+          border-color: #DBEAFE;
+        }
+        .modern-calendar-cell.is-muted {
+          color: #CBD5E1;
+        }
+        .modern-calendar-cell:disabled {
+          cursor: not-allowed;
+          opacity: 0.4;
+          background: #F8FAFC;
+        }
+        .modern-calendar-cell.is-selected {
+          background: #EFF6FF;
+          border-color: #3B82F6;
+          box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+          z-index: 10;
+        }
+        .modern-calendar-cell.is-selected .calendar-day-number {
+          color: #1D4ED8;
+          font-weight: 700;
+        }
+        .calendar-day-number {
+          font-size: 14px;
+          font-weight: 500;
+          color: #334155;
+          margin-bottom: 2px;
+        }
+        .calendar-day-meta {
+          font-size: 10px;
+          color: #64748B;
+          font-weight: 600;
+          line-height: 1.2;
+          margin-top: 2px;
+          text-align: center;
+        }
+
+        .slot-group {
+          margin-bottom: 24px;
+        }
+        .slot-group h4 {
+          font-size: 12px;
+          font-weight: 700;
+          color: #64748B;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin: 0 0 12px 0;
+          padding-bottom: 6px;
+          border-bottom: 1px solid #F1F5F9;
+        }
+        .slot-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+          gap: 12px;
+        }
+        
+        .slot-btn {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 12px;
+          border-radius: 8px;
+          border: 1px solid #E2E8F0;
+          background: #FFFFFF;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          font-family: inherit;
+          gap: 8px;
+        }
+        .slot-btn span:first-child {
+          font-size: 13px;
+          font-weight: 600;
+          color: #0F172A;
+          white-space: nowrap;
+        }
+        .slot-btn .slot-status {
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 4px;
+          text-transform: uppercase;
+        }
+        
+        /* Slot States */
+        .slot-btn:hover:not(:disabled):not(.is-active) {
+          border-color: #CBD5E1;
+          background: #F8FAFC;
+        }
+        .slot-btn .slot-status.is-open {
+          background: #DCFCE7;
+          color: #166534;
+        }
+        .slot-btn.is-active {
+          background: #2563EB;
+          border-color: #2563EB;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .slot-btn.is-active span:first-child {
+          color: #FFFFFF;
+        }
+        .slot-btn.is-active .slot-status {
+          background: rgba(255,255,255,0.2);
+          color: #FFFFFF;
+        }
+        .slot-btn.is-taken {
+          background: #F8FAFC;
+          border-color: #F1F5F9;
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .slot-btn.is-taken .slot-status {
+          background: transparent;
+          color: #94A3B8;
+        }
+
+        .booking-details-section {
+          margin-top: 24px;
+          padding-top: 24px;
+          border-top: 1px solid #E2E8F0;
+        }
+        .booking-details-section h3 {
+          font-size: 18px;
+          font-weight: 700;
+          color: #0F172A;
+          margin: 0 0 16px 0;
+        }
+
+        .form-grid {
+          display: grid;
+          gap: 16px;
+        }
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+        .form-field {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .form-field label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #475569;
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+        }
+        .modern-input {
+          width: 100%;
+          padding: 10px 14px;
+          border-radius: 8px;
+          border: 1px solid #CBD5E1;
+          font-size: 14px;
+          color: #0F172A;
+          background: #FFFFFF;
+          transition: all 0.2s ease;
+          box-sizing: border-box;
+          font-family: inherit;
+        }
+        .modern-input:focus {
+          outline: none;
+          border-color: #2563EB;
+          box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+        }
+        .modern-input:read-only {
+          background: #F1F5F9;
+          color: #334155;
+          font-weight: 500;
+          border-color: #E2E8F0;
+          cursor: default;
+        }
+
+        .submit-btn {
+          width: 100%;
+          background: #2563EB;
+          color: #FFFFFF;
+          border: none;
+          padding: 14px;
+          border-radius: 8px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .submit-btn:hover:not(:disabled) {
+          background: #1D4ED8;
+        }
+        .submit-btn:disabled {
+          background: #94A3B8;
+          cursor: not-allowed;
+          opacity: 0.8;
+        }
+
+        .spinner {
+          width: 20px;
+          height: 20px;
+          border: 3px solid rgba(255,255,255,0.3);
+          border-radius: 50%;
+          border-top-color: #fff;
+          animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1024px) {
+          .modern-booking-layout {
+            grid-template-columns: 1fr;
+          }
+        }
+        @media (max-width: 640px) {
+          .form-row {
+            grid-template-columns: 1fr;
+          }
+          .slot-list {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
+      <div className="modern-booking-header">
+        <h1>Schedule Booking</h1>
+        <p>Select a date and time to reserve a campus resource.</p>
+      </div>
+
+      <div className="modern-booking-layout">
+        
+        {/* Left Column: Calendar */}
+        <div className="booking-card">
+          <div className="form-field" style={{ marginBottom: '32px' }}>
+            <label htmlFor="resourceId">Select Resource</label>
+            <CustomSelect
+              id="resourceId"
+              className="modern-input"
+              value={form.resourceId}
+              onChange={(val) =>
+                setForm((prev) => ({
+                  ...prev,
+                  resourceId: val,
+                  date: "",
+                  startTime: "",
+                  endTime: "",
+                }))
+              }
+              options={resources.map((resource) => ({
+                value: resource.id,
+                label: `${resource.name} - ${resource.location}`
+              }))}
+            />
+          </div>
+
+          <div className="calendar-controls">
             <button
-              className="btn btn-light"
+              className="cal-btn"
               type="button"
               disabled={!canGoPrevMonth}
               onClick={() => {
@@ -288,166 +666,220 @@ const CreateBookingPage = () => {
             </button>
             <strong>{monthLabel(calendarMonth)}</strong>
             <button
-              className="btn btn-light"
+              className="cal-btn"
               type="button"
               onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
             >
               Next
             </button>
           </div>
-        </div>
 
-        <div className="form-field" style={{ marginTop: 10 }}>
-          <label htmlFor="resourceId">Resource</label>
-          <select
-            id="resourceId"
-            className="input"
-            value={form.resourceId}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                resourceId: e.target.value,
-                date: "",
-                startTime: "",
-                endTime: "",
-              }))
-            }
-            required
-          >
-            {resources.map((resource) => (
-              <option key={resource.id} value={resource.id}>
-                {resource.name} - {resource.location}
-              </option>
+          <div className="modern-calendar-weekdays">
+            {weekdayLabels.map((label) => (
+              <div key={label}>{label}</div>
             ))}
-          </select>
+          </div>
+
+          <div className="modern-calendar-grid">
+            {calendarDays.map((day) => {
+              const dateKey = toDateKey(day);
+              const dayAvailability = availabilityByDate[dateKey];
+              const isCurrentMonth = day.getMonth() === calendarMonth.getMonth();
+              const isPast = dateKey < todayKey;
+              const isSelected = form.date === dateKey;
+              const isSelectable = isCurrentMonth && !isPast && Boolean(dayAvailability);
+
+              const selectedResource = resources.find(r => r.id === form.resourceId);
+              const capacity = selectedResource?.capacity || 0;
+              let remainingCapacity = 0;
+              
+              if (dayAvailability) {
+                  const bookedSlots = dayAvailability.totalSlots - dayAvailability.availableSlotCount;
+                  remainingCapacity = Math.max(0, capacity - bookedSlots);
+              }
+
+              return (
+                <button
+                  key={dateKey}
+                  type="button"
+                  className={`modern-calendar-cell${isCurrentMonth ? "" : " is-muted"}${isSelected ? " is-selected" : ""}`}
+                  disabled={!isSelectable}
+                  onClick={() => onDateSelect(dateKey)}
+                >
+                  <span className="calendar-day-number">{day.getDate()}</span>
+                  <span className="calendar-day-meta">
+                    {availabilityLoading && isCurrentMonth && !isPast && "..."}
+                    {!availabilityLoading && isCurrentMonth && !isPast && dayAvailability && (
+                      remainingCapacity > 0
+                        ? `${remainingCapacity} slots`
+                        : "Full"
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="calendar-weekdays">
-          {weekdayLabels.map((label) => (
-            <div key={label}>{label}</div>
-          ))}
-        </div>
+        {/* Right Column: Time Slots & Booking Details */}
+        <div className="booking-card">
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>Available Time Slots</h3>
+            {!form.date ? (
+              <p style={{ color: '#64748B', margin: 0, fontSize: '14px' }}>Please select a date from the calendar first.</p>
+            ) : (
+              <p style={{ color: '#0F172A', margin: 0, fontSize: '14px', fontWeight: 500 }}>
+                Date: <span style={{ color: '#2563EB', fontWeight: 600 }}>{new Date(form.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+              </p>
+            )}
+          </div>
 
-        <div className="calendar-grid">
-          {calendarDays.map((day) => {
-            const dateKey = toDateKey(day);
-            const dayAvailability = availabilityByDate[dateKey];
-            const isCurrentMonth = day.getMonth() === calendarMonth.getMonth();
-            const isPast = dateKey < todayKey;
-            const isSelected = form.date === dateKey;
-            const isSelectable = isCurrentMonth && !isPast && Boolean(dayAvailability);
+          {form.date && (
+            <>
+              {!selectedDay && availabilityLoading && <p style={{ color: '#64748B' }}>Loading available slots...</p>}
 
-            return (
-              <button
-                key={dateKey}
-                type="button"
-                className={`calendar-cell${isCurrentMonth ? "" : " is-muted"}${isSelected ? " is-selected" : ""}`}
-                disabled={!isSelectable}
-                onClick={() => onDateSelect(dateKey)}
-              >
-                <span className="calendar-day-number">{day.getDate()}</span>
-                <span className="calendar-day-meta">
-                  {availabilityLoading && isCurrentMonth && !isPast && "..."}
-                  {!availabilityLoading && isCurrentMonth && !isPast && dayAvailability && (
-                    dayAvailability.availableSlotCount > 0
-                      ? `${dayAvailability.availableSlotCount} slots`
-                      : "Full"
+              {selectedDay && (
+                <>
+                  {morning.length > 0 && (
+                    <div className="slot-group">
+                      <h4>Morning</h4>
+                      <div className="slot-list">
+                        {morning.map((slot) => (
+                          <button
+                            key={slot.key}
+                            type="button"
+                            className={`slot-btn${slot.active ? " is-active" : ""}${slot.isTaken ? " is-taken" : ""}`}
+                            disabled={slot.isTaken}
+                            onClick={() => onSlotSelect(form.date, slot)}
+                          >
+                            <span>{slot.startTime} - {slot.endTime}</span>
+                            <span className={`slot-status${slot.isTaken ? " is-taken" : " is-open"}`}>
+                              {slot.isAvailable ? "Available" : (slot.isPastTimeToday ? "Past" : "Taken")}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
-      <div className="card">
-        <h3>Available Time Slots</h3>
-        {!form.date && <p>Select a date from the calendar to view available times.</p>}
+                  {afternoon.length > 0 && (
+                    <div className="slot-group">
+                      <h4>Afternoon</h4>
+                      <div className="slot-list">
+                        {afternoon.map((slot) => (
+                          <button
+                            key={slot.key}
+                            type="button"
+                            className={`slot-btn${slot.active ? " is-active" : ""}${slot.isTaken ? " is-taken" : ""}`}
+                            disabled={slot.isTaken}
+                            onClick={() => onSlotSelect(form.date, slot)}
+                          >
+                            <span>{slot.startTime} - {slot.endTime}</span>
+                            <span className={`slot-status${slot.isTaken ? " is-taken" : " is-open"}`}>
+                              {slot.isAvailable ? "Available" : (slot.isPastTimeToday ? "Past" : "Taken")}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-        {form.date && (
-          <>
-            <p className="muted">
-              Date: <strong>{form.date}</strong>
-            </p>
+                  {evening.length > 0 && (
+                    <div className="slot-group" style={{ marginBottom: 0 }}>
+                      <h4>Evening</h4>
+                      <div className="slot-list">
+                        {evening.map((slot) => (
+                          <button
+                            key={slot.key}
+                            type="button"
+                            className={`slot-btn${slot.active ? " is-active" : ""}${slot.isTaken ? " is-taken" : ""}`}
+                            disabled={slot.isTaken}
+                            onClick={() => onSlotSelect(form.date, slot)}
+                          >
+                            <span>{slot.startTime} - {slot.endTime}</span>
+                            <span className={`slot-status${slot.isTaken ? " is-taken" : " is-open"}`}>
+                              {slot.isAvailable ? "Available" : (slot.isPastTimeToday ? "Past" : "Taken")}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
 
-            {!selectedDay && availabilityLoading && <p>Loading slots...</p>}
-
-            {selectedDay && (
-              <div className="slot-list">
-                {daySlots.map((slot) => {
-                  const key = slotKey(slot.startTime, slot.endTime);
-                  const isPastTimeToday = form.date === todayKey && slot.startTime <= currentTimeKey;
-                  const isAvailable = availableSlotKeySet.has(key) && !isPastTimeToday;
-                  const isTaken = !isAvailable;
-                  const active = isAvailable && form.startTime === slot.startTime && form.endTime === slot.endTime;
-
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      className={`slot-btn${active ? " is-active" : ""}${isTaken ? " is-taken" : ""}`}
-                      disabled={isTaken}
-                      onClick={() => onSlotSelect(form.date, slot)}
-                    >
-                      <span>{slot.startTime} - {slot.endTime}</span>
-                      <span className={`slot-status${isTaken ? " is-taken" : " is-open"}`}>
-                        {isAvailable ? "Available" : (isPastTimeToday ? "Past" : "Taken")}
-                      </span>
-                    </button>
-                  );
-                })}
+          {/* Booking Details Form */}
+          <div className="booking-details-section">
+            <h3>Booking Details</h3>
+            
+            {error && (
+              <div style={{ padding: '16px', background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', borderRadius: '12px', marginBottom: '24px', fontSize: '14px', fontWeight: 500 }}>
+                {error}
               </div>
             )}
-          </>
-        )}
 
-        <hr />
+            <form className="form-grid" onSubmit={onSubmit}>
+              <div className="form-field">
+                <label htmlFor="title">Event Title</label>
+                <input
+                  id="title"
+                  className="modern-input"
+                  placeholder="e.g. Weekly Team Sync"
+                  value={form.title}
+                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                  required
+                />
+              </div>
 
-        {error && <div className="alert alert-error">{error}</div>}
+              <div className="form-field">
+                <label htmlFor="purpose">Purpose</label>
+                <textarea
+                  id="purpose"
+                  className="modern-input"
+                  placeholder="Briefly describe what this booking is for..."
+                  value={form.purpose}
+                  onChange={(e) => setForm((prev) => ({ ...prev, purpose: e.target.value }))}
+                  rows={2}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
 
-        <form className="grid" onSubmit={onSubmit}>
-          <div className="form-field">
-            <label htmlFor="title">Title</label>
-            <input
-              id="title"
-              className="input"
-              value={form.title}
-              onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-              required
-            />
+              <div className="form-row">
+                <div className="form-field">
+                  <label>Selected Date</label>
+                  <input className="modern-input" value={form.date} readOnly placeholder="None" />
+                </div>
+                <div className="form-field">
+                  <label>Time Slot</label>
+                  <input
+                    className="modern-input"
+                    value={form.startTime && form.endTime ? `${form.startTime} - ${form.endTime}` : ""}
+                    readOnly
+                    placeholder="None"
+                  />
+                </div>
+              </div>
+
+              <button 
+                className="submit-btn" 
+                type="submit" 
+                disabled={loading || availabilityLoading || !resources.length || !form.startTime}
+              >
+                {loading ? (
+                  <>
+                    <div className="spinner"></div>
+                    Processing...
+                  </>
+                ) : (
+                  "Create Booking"
+                )}
+              </button>
+            </form>
           </div>
 
-          <div className="form-field">
-            <label htmlFor="purpose">Purpose</label>
-            <textarea
-              id="purpose"
-              className="input"
-              value={form.purpose}
-              onChange={(e) => setForm((prev) => ({ ...prev, purpose: e.target.value }))}
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-2">
-            <div className="form-field">
-              <label>Date</label>
-              <input className="input" value={form.date} readOnly placeholder="Select from calendar" />
-            </div>
-            <div className="form-field">
-              <label>Time Slot</label>
-              <input
-                className="input"
-                value={form.startTime && form.endTime ? `${form.startTime} - ${form.endTime}` : ""}
-                readOnly
-                placeholder="Select available slot"
-              />
-            </div>
-          </div>
-
-          <button className="btn btn-primary" type="submit" disabled={loading || availabilityLoading || !resources.length}>
-            {loading ? "Creating..." : "Create Booking"}
-          </button>
-        </form>
+        </div>
       </div>
     </section>
   );

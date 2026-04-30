@@ -1,0 +1,62 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>Smart Campus Hub - Test Cases</title>
+<style>
+  body { font-family: Arial, sans-serif; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #000000; padding: 8px; text-align: left; vertical-align: top; }
+  th { background-color: #f2f2f2; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>Smart Campus Hub - Comprehensive Test Plan</h2>
+<table>
+  <tr>
+    <th>ID</th>
+    <th>Module</th>
+    <th>Test Case</th>
+    <th>Expected Result</th>
+    <th>Status</th>
+  </tr>
+  <tr><td>1</td><td>Authentication</td><td>Register with valid Full Name, Email, Password, and Role (e.g., USER), then click "Sign Up".</td><td>Account is created successfully; user is redirected to the login page with a success message.</td><td>Pass</td></tr>
+  <tr><td>2</td><td>Authentication</td><td>Login with valid registered Email and Password.</td><td>User logs in successfully and is redirected to the Home dashboard based on their role.</td><td>Pass</td></tr>
+  <tr><td>3</td><td>Authentication</td><td>Login with invalid Email or Password.</td><td>Login fails; an error message "Invalid credentials" is displayed.</td><td>Pass</td></tr>
+  <tr><td>4</td><td>Authentication</td><td>Click "Continue with Google" and authenticate via Google popup.</td><td>User is authenticated successfully, JWT is issued, and redirected to Home dashboard.</td><td>Pass</td></tr>
+  <tr><td>5</td><td>Authentication</td><td>As a 'USER', attempt to navigate to /admin/users via URL directly.</td><td>Access is denied; user is redirected to a 403 Forbidden or Home page.</td><td>Pass</td></tr>
+  <tr><td>6</td><td>Authentication</td><td>Click the "Logout" button in the Navbar.</td><td>User session is cleared (JWT removed) and redirected to the Login page.</td><td>Pass</td></tr>
+  <tr><td>7</td><td>User Management</td><td>As Admin, navigate to "Users" page.</td><td>A list of all registered users is displayed with Name, Email, Role, and Status.</td><td>Pass</td></tr>
+  <tr><td>8</td><td>User Management</td><td>Enter a valid user name or email in the search bar on the Users page.</td><td>The user list updates instantly to display only records matching the search query.</td><td>Pass</td></tr>
+  <tr><td>9</td><td>User Management</td><td>Select "TECHNICIAN" from the Role filter dropdown.</td><td>Only users with the TECHNICIAN role are displayed in the table.</td><td>Pass</td></tr>
+  <tr><td>10</td><td>User Management</td><td>Click "Add User", fill details, select "ADMIN" role, and submit.</td><td>A new admin user is created and appears in the table.</td><td>Pass</td></tr>
+  <tr><td>11</td><td>User Management</td><td>Change a user's role from USER to TECHNICIAN in the table dropdown, then click the Save button.</td><td>Role is updated successfully in the database, confirmed by the UI update.</td><td>Pass</td></tr>
+  <tr><td>12</td><td>User Management</td><td>Click the Delete icon on a user row and confirm the modal prompt.</td><td>The user is deleted and removed from the system table.</td><td>Pass</td></tr>
+  <tr><td>13</td><td>Resource Mgmt</td><td>Navigate to "Resources" page as any logged-in user.</td><td>List of resources (Rooms, Equipment) is displayed with current availability status.</td><td>Pass</td></tr>
+  <tr><td>14</td><td>Resource Mgmt</td><td>Select "LAB" from the Category filter.</td><td>Only laboratory resources are displayed in the grid.</td><td>Pass</td></tr>
+  <tr><td>15</td><td>Resource Mgmt</td><td>As Admin, click "Add Resource", fill Name, Type, Capacity, and Save.</td><td>New resource is successfully added and becomes visible to all users.</td><td>Pass</td></tr>
+  <tr><td>16</td><td>Resource Mgmt</td><td>As Admin, click "Edit" on a resource, change Capacity, and Save.</td><td>Resource capacity is updated successfully and reflects in the UI.</td><td>Pass</td></tr>
+  <tr><td>17</td><td>Resource Mgmt</td><td>As Admin, edit a resource and change status from "AVAILABLE" to "MAINTENANCE".</td><td>Status updates; the resource shows as Maintenance and can no longer be booked.</td><td>Pass</td></tr>
+  <tr><td>18</td><td>Bookings</td><td>Navigate to Bookings &gt; Create, select a resource, choose valid Date/Time, and submit.</td><td>Booking is created with "PENDING" status and appears in My Bookings.</td><td>Pass</td></tr>
+  <tr><td>19</td><td>Bookings</td><td>Attempt to book a resource for a time slot that is already "APPROVED" for someone else.</td><td>System rejects the booking and shows a "Time slot unavailable" error.</td><td>Pass</td></tr>
+  <tr><td>20</td><td>Bookings</td><td>Navigate to "My Bookings".</td><td>List of the user's personal bookings is displayed, sorted chronologically.</td><td>Pass</td></tr>
+  <tr><td>21</td><td>Bookings</td><td>As Admin, navigate to Bookings list and click "Approve" on a PENDING booking.</td><td>Booking status changes to APPROVED; the requesting user is notified.</td><td>Pass</td></tr>
+  <tr><td>22</td><td>Bookings</td><td>As Admin, click "Reject" on a PENDING booking and provide a reason.</td><td>Booking status changes to REJECTED; the requesting user is notified.</td><td>Pass</td></tr>
+  <tr><td>23</td><td>Bookings</td><td>Go to My Bookings and click "Cancel" on an upcoming booking you created.</td><td>Booking is cancelled and the resource time slot becomes available again.</td><td>Pass</td></tr>
+  <tr><td>24</td><td>Tickets</td><td>Navigate to Tickets &gt; Create, fill Title, Category, Priority, and Description, then submit.</td><td>Ticket is created with "OPEN" status.</td><td>Pass</td></tr>
+  <tr><td>25</td><td>Tickets</td><td>Attach an image file (.png/.jpg) to the Create Ticket form and submit.</td><td>Ticket is created and the image is successfully uploaded and visible in details.</td><td>Pass</td></tr>
+  <tr><td>26</td><td>Tickets</td><td>As Admin, open an unassigned Ticket, select a Technician, and click Assign.</td><td>Ticket status changes to ASSIGNED; the assigned technician receives a notification.</td><td>Pass</td></tr>
+  <tr><td>27</td><td>Tickets</td><td>As Technician, navigate to "Assigned Tickets".</td><td>Only tickets specifically assigned to this technician are displayed.</td><td>Pass</td></tr>
+  <tr><td>28</td><td>Tickets</td><td>As Technician, open an assigned ticket and update status to "IN_PROGRESS".</td><td>Ticket status updates immediately in the system.</td><td>Pass</td></tr>
+  <tr><td>29</td><td>Tickets</td><td>As Technician, change an in-progress ticket to "RESOLVED" and add resolution notes.</td><td>Ticket is resolved; original reporter is notified of the resolution.</td><td>Pass</td></tr>
+  <tr><td>30</td><td>Tickets</td><td>Open any ticket, type a message in the comment box, and submit.</td><td>Comment is appended to the ticket timeline with a timestamp.</td><td>Pass</td></tr>
+  <tr><td>31</td><td>Notifications</td><td>Have an Admin approve a booking while the requesting User A is logged in.</td><td>User A receives a real-time push/toast notification via WebSocket.</td><td>Pass</td></tr>
+  <tr><td>32</td><td>Notifications</td><td>Trigger a notification and view the Navbar notification bell icon.</td><td>The red badge displays the correct count of unread notifications.</td><td>Pass</td></tr>
+  <tr><td>33</td><td>Notifications</td><td>Open the notification dropdown and click on an unread notification.</td><td>The notification is marked as read, and the badge counter decreases.</td><td>Pass</td></tr>
+  <tr><td>34</td><td>Notifications</td><td>On Profile page, toggle OFF "Booking Updates", then have Admin approve a booking.</td><td>The booking is approved, but the user does NOT receive a notification.</td><td>Pass</td></tr>
+  <tr><td>35</td><td>Analytics</td><td>As Admin, view the Home page dashboard.</td><td>Total Bookings, Pending Requests, Active Resources, and Open Tickets show accurate metrics.</td><td>Pass</td></tr>
+  <tr><td>36</td><td>Analytics</td><td>As Admin, view Home page when there are pending approvals.</td><td>The alerts panel appears, accurately displaying pending booking/ticket counts.</td><td>Pass</td></tr>
+  <tr><td>37</td><td>Analytics</td><td>As Admin, navigate to the System Analytics page.</td><td>Charts and graphs load and render correctly.</td><td>Pass</td></tr>
+  <tr><td>38</td><td>Analytics</td><td>As Technician, view the Home page dashboard.</td><td>Work summary metrics display accurately.</td><td>Pass</td></tr>
+</table>
+</body>
+</html>

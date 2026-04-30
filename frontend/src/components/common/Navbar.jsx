@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import {
+  deleteAllNotifications,
+  deleteNotification,
   getMyNotifications,
   getMyUnreadNotificationCount,
   markAllNotificationsRead,
@@ -108,44 +110,42 @@ const Navbar = () => {
   const linkClass = ({ isActive }) =>
     isActive ? "nav-link is-active" : "nav-link";
 
-  // Helper: is the current path inside one of the URLs in the list?
-  // Used to highlight the parent dropdown button when any child route is active.
-  const isPathActive = (paths) =>
-    paths.some((path) => location.pathname === path || location.pathname.startsWith(path + "/"));
-
   // First letter for the avatar circle.
   const initial = user?.fullName?.trim().charAt(0).toUpperCase() ?? "U";
-
-  // ----- The dropdown items per group -----
-  // We build them as data so the JSX stays clean.
-  const bookingItems = [
-    { to: "/bookings/my", label: "My Bookings",  icon: "📅", show: true },
-    { to: "/bookings",    label: "All Bookings", icon: "📋", show: user?.role === "ADMIN", end: true },
-  ].filter((item) => item.show);
-
-  const ticketItems = [
-    { to: "/tickets/my",       label: "My Tickets", icon: "🎫", show: true },
-    { to: "/tickets/assigned", label: "Assigned",   icon: "🛠", show: user?.role === "TECHNICIAN" || user?.role === "ADMIN" },
-    { to: "/tickets",          label: "All Tickets", icon: "📊", show: user?.role === "ADMIN", end: true },
-  ].filter((item) => item.show);
+  const bookingsPath = user?.role === "ADMIN" ? "/bookings" : "/bookings/my";
+  const ticketsPath = user?.role === "ADMIN" ? "/tickets" : "/tickets/my";
+  const getNotificationMeta = (notification) => {
+    const type = notification?.type;
+    const text = `${notification?.title || ""} ${notification?.message || ""}`.toLowerCase();
+    if (type === "BOOKING") return { icon: "📅", label: "Booking", className: "is-booking" };
+    if (type === "TICKET") return { icon: "🛠️", label: "Ticket", className: "is-ticket" };
+    if (text.includes("resource")) return { icon: "🏛️", label: "Resource", className: "is-resource" };
+    if (type === "SYSTEM") return { icon: "⚙️", label: "System", className: "is-system" };
+    return { icon: "🔔", label: "General", className: "is-general" };
+  };
 
   return (
     <div className="nav-wrap">
       <nav className="nav" ref={navRef}>
+        <div className="nav-left">
+          <Link to={isAuthenticated ? "/home" : "/login"} className="nav-brand">
+            <span className="nav-brand-icon">🎓</span>
+            <span>Smart Campus Hub</span>
+          </Link>
+        </div>
 
-        {/* Brand */}
-        <Link to={isAuthenticated ? "/dashboard" : "/login"} className="nav-brand">
-          <span className="nav-brand-icon">🎓</span>
-          <span>Smart Campus Hub</span>
-        </Link>
-
-        {/* Authenticated navigation links */}
         {isAuthenticated && (
-          <div className="nav-links">
+          <div className="nav-center">
+            <div className="nav-links">
+
+            {/* Top level - Home */}
+            <NavLink to="/home" className={linkClass}>
+              <span className="nav-link-icon">🏠</span>Home
+            </NavLink>
 
             {/* Top level - Dashboard */}
             <NavLink to="/dashboard" className={linkClass}>
-              <span className="nav-link-icon">🏠</span>Dashboard
+              <span className="nav-link-icon">📊</span>Dashboard
             </NavLink>
 
             {/* Top level - Resources */}
@@ -160,86 +160,21 @@ const Navbar = () => {
               </NavLink>
             )}
 
-            {/* Dropdown - Bookings */}
-            <div className="nav-dropdown">
-              <button
-                type="button"
-                className={`nav-link nav-dropdown-btn${
-                  isPathActive(["/bookings"]) ? " is-active" : ""
-                }${openMenu === "bookings" ? " is-open" : ""}`}
-                onClick={() => setOpenMenu(openMenu === "bookings" ? null : "bookings")}
-                aria-haspopup="true"
-                aria-expanded={openMenu === "bookings"}
-              >
-                <span className="nav-link-icon">📅</span>
-                Bookings
-                <span className="nav-chevron">▾</span>
-              </button>
+            <NavLink to={bookingsPath} className={linkClass}>
+              <span className="nav-link-icon">📅</span>Bookings
+            </NavLink>
 
-              {openMenu === "bookings" && (
-                <div className="nav-dropdown-panel" role="menu">
-                  {bookingItems.map((item) => (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      end={item.end}
-                      className={({ isActive }) =>
-                        isActive
-                          ? "nav-dropdown-item is-active"
-                          : "nav-dropdown-item"
-                      }
-                    >
-                      <span className="nav-link-icon">{item.icon}</span>
-                      {item.label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
+            <NavLink to={ticketsPath} className={linkClass}>
+              <span className="nav-link-icon">🎫</span>Tickets
+            </NavLink>
+
             </div>
-
-            {/* Dropdown - Tickets */}
-            <div className="nav-dropdown">
-              <button
-                type="button"
-                className={`nav-link nav-dropdown-btn${
-                  isPathActive(["/tickets"]) ? " is-active" : ""
-                }${openMenu === "tickets" ? " is-open" : ""}`}
-                onClick={() => setOpenMenu(openMenu === "tickets" ? null : "tickets")}
-                aria-haspopup="true"
-                aria-expanded={openMenu === "tickets"}
-              >
-                <span className="nav-link-icon">🎫</span>
-                Tickets
-                <span className="nav-chevron">▾</span>
-              </button>
-
-              {openMenu === "tickets" && (
-                <div className="nav-dropdown-panel" role="menu">
-                  {ticketItems.map((item) => (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      end={item.end}
-                      className={({ isActive }) =>
-                        isActive
-                          ? "nav-dropdown-item is-active"
-                          : "nav-dropdown-item"
-                      }
-                    >
-                      <span className="nav-link-icon">{item.icon}</span>
-                      {item.label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-
           </div>
         )}
 
-        {/* Right side - user info or login links */}
-        {isAuthenticated ? (
-          <div className="nav-user">
+        <div className="nav-right">
+          {isAuthenticated ? (
+            <div className="nav-user">
             {/* Notifications bell */}
             <div className="nav-dropdown">
               <button
@@ -264,78 +199,117 @@ const Navbar = () => {
                 <div className="nav-dropdown-panel nav-notify-panel" role="menu">
                   <div className="nav-notify-header">
                     <span className="nav-notify-title">Notifications</span>
-                    <button
-                      type="button"
-                      className="nav-notify-action"
-                      onClick={async () => {
-                        try {
-                          await markAllNotificationsRead();
-                          setUnreadCount(0);
-                          setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-                        } finally {
-                          // keep panel open
-                        }
-                      }}
-                    >
-                      Mark all read
-                    </button>
+                    <div className="nav-notify-actions">
+                      <button
+                        type="button"
+                        className="nav-notify-action"
+                        onClick={async () => {
+                          try {
+                            await markAllNotificationsRead();
+                            setUnreadCount(0);
+                            setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+                          } finally {
+                            // keep panel open
+                          }
+                        }}
+                      >
+                        Mark all read
+                      </button>
+                      <button
+                        type="button"
+                        className="nav-notify-action is-danger"
+                        onClick={async () => {
+                          try {
+                            await deleteAllNotifications();
+                            setNotifications([]);
+                            setUnreadCount(0);
+                          } finally {
+                            // keep panel open
+                          }
+                        }}
+                      >
+                        Delete all
+                      </button>
+                    </div>
                   </div>
 
                   {notifications.length === 0 ? (
                     <div className="nav-notify-empty">No notifications yet.</div>
                   ) : (
                     <div className="nav-notify-list">
-                      {notifications.map((n) => (
-                        <button
-                          key={n.id}
-                          type="button"
-                          className={`nav-notify-item${n.read ? "" : " is-unread"}`}
-                          onClick={async () => {
-                            if (!n.read) {
+                      {notifications.map((n) => {
+                        const meta = getNotificationMeta(n);
+                        return (
+                        <div key={n.id} className={`nav-notify-item${n.read ? "" : " is-unread"}`}>
+                          <button
+                            type="button"
+                            className="nav-notify-open"
+                            onClick={async () => {
+                              if (!n.read) {
+                                try {
+                                  await markNotificationRead(n.id);
+                                  setNotifications((prev) =>
+                                    prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)),
+                                  );
+                                  setUnreadCount((c) => Math.max(0, (Number(c) || 0) - 1));
+                                } catch {
+                                  // ignore
+                                }
+                              }
+                            }}
+                          >
+                            <div className="nav-notify-item-top">
+                              <span className={`nav-notify-tag ${meta.className}`}>
+                                <span>{meta.icon}</span> {meta.label}
+                              </span>
+                            </div>
+                            <div className="nav-notify-item-title">{n.title}</div>
+                            <div className="nav-notify-item-message">{n.message}</div>
+                          </button>
+                          <button
+                            type="button"
+                            className="nav-notify-delete"
+                            title="Delete notification"
+                            onClick={async () => {
                               try {
-                                await markNotificationRead(n.id);
-                                setNotifications((prev) =>
-                                  prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)),
-                                );
-                                setUnreadCount((c) => Math.max(0, (Number(c) || 0) - 1));
+                                await deleteNotification(n.id);
+                                setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+                                if (!n.read) {
+                                  setUnreadCount((c) => Math.max(0, (Number(c) || 0) - 1));
+                                }
                               } catch {
                                 // ignore
                               }
-                            }
-                          }}
-                        >
-                          <div className="nav-notify-item-title">{n.title}</div>
-                          <div className="nav-notify-item-message">{n.message}</div>
-                        </button>
-                      ))}
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      )})}
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            <Link
-              to="/profile"
-              className="nav-user-profile-link"
-              title="View your profile"
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", color: "inherit" }}
-            >
+            <Link to="/profile" className="nav-user-profile-link" title="View your profile">
               <div className="nav-user-info">
                 <span className="nav-user-name">{user?.fullName}</span>
                 <span className="nav-user-role">{user?.role}</span>
               </div>
-              <div className="nav-avatar" style={{ cursor: "pointer" }}>{initial}</div>
+              <div className="nav-avatar">{initial}</div>
             </Link>
             <button className="nav-logout-btn" onClick={onLogout} type="button">
               Logout
             </button>
-          </div>
-        ) : (
-          <div className="nav-public-links">
-            <Link to="/login" className="nav-public-link">Login</Link>
-            <Link to="/register" className="nav-public-link is-primary">Register</Link>
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="nav-public-links">
+              <Link to="/login" className="nav-public-link">Login</Link>
+              <Link to="/register" className="nav-public-link is-primary">Register</Link>
+            </div>
+          )}
+        </div>
 
       </nav>
     </div>

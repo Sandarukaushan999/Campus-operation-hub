@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getUsers } from "../../../api/userApi";
 import { assignTicket, getAllTickets } from "../../../api/ticketApi";
+import CustomSelect from "../../../components/common/CustomSelect";
 import "../tickets.css";
 
 const STATUS_LABELS = {
@@ -172,19 +173,20 @@ const TicketListPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <select
+        <CustomSelect
           className="tk-filter-select"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="ALL">All Statuses</option>
-          <option value="OPEN">Open</option>
-          <option value="ASSIGNED">Assigned</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="RESOLVED">Resolved</option>
-          <option value="CLOSED">Closed</option>
-          <option value="REJECTED">Rejected</option>
-        </select>
+          onChange={(val) => setStatusFilter(val)}
+          options={[
+            { value: "ALL", label: "All Statuses" },
+            { value: "OPEN", label: "Open" },
+            { value: "ASSIGNED", label: "Assigned" },
+            { value: "IN_PROGRESS", label: "In Progress" },
+            { value: "RESOLVED", label: "Resolved" },
+            { value: "CLOSED", label: "Closed" },
+            { value: "REJECTED", label: "Rejected" },
+          ]}
+        />
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -289,21 +291,17 @@ const TicketListPage = () => {
                   <div className="tk-inline-form">
                     <label className="tk-inline-form-label">Assign technician</label>
 
-                    <select
+                    <CustomSelect
                       className="tk-select"
                       value={assignTechId}
-                      onChange={(e) => setAssignTechId(e.target.value)}
+                      onChange={(val) => setAssignTechId(val)}
                       disabled={assigning || techLoading}
-                    >
-                      <option value="" disabled hidden>
-                        {techLoading ? "Loading technicians..." : "Select a technician..."}
-                      </option>
-                      {technicians.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.fullName || t.email} ({t.role}) — {t.id.slice(0, 8)}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder={techLoading ? "Loading technicians..." : "Select a technician..."}
+                      options={technicians.map((t) => ({
+                        value: t.id,
+                        label: `${t.fullName || t.email} (${t.role}) — ${t.id.slice(0, 8)}`
+                      }))}
+                    />
 
                     {technicians.length === 0 && !techLoading && (
                       <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, marginBottom: 0 }}>

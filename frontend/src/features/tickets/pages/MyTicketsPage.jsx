@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { deleteTicket, getMyTickets } from "../../../api/ticketApi";
+import CustomSelect from "../../../components/common/CustomSelect";
+import useAuth from "../../../hooks/useAuth";
 import "../tickets.css";
 
 // Friendly labels and icons for the ticket fields.
@@ -40,6 +42,7 @@ const parseErrorMessage = (err, fallback) => {
 };
 
 const MyTicketsPage = () => {
+  const { user } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -47,6 +50,8 @@ const MyTicketsPage = () => {
   const [deletingId, setDeletingId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const isStaff = user?.role === "ADMIN" || user?.role === "TECHNICIAN";
 
   const fetchTickets = useCallback(async (showLoader = false) => {
     if (showLoader) setLoading(true);
@@ -126,6 +131,11 @@ const MyTicketsPage = () => {
             </p>
           </div>
           <div className="tk-hero-actions">
+            {isStaff && (
+              <Link className="tk-btn tk-btn-light" to="/tickets/assigned" style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>
+                🛠️ View Assigned Jobs
+              </Link>
+            )}
             <button
               className="tk-btn tk-btn-light"
               type="button"
@@ -189,19 +199,20 @@ const MyTicketsPage = () => {
             onChange={(event) => setSearchTerm(event.target.value)}
           />
         </div>
-        <select
+        <CustomSelect
           className="tk-filter-select"
           value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
-        >
-          <option value="ALL">All Statuses</option>
-          <option value="OPEN">Open</option>
-          <option value="ASSIGNED">Assigned</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="RESOLVED">Resolved</option>
-          <option value="CLOSED">Closed</option>
-          <option value="REJECTED">Rejected</option>
-        </select>
+          onChange={(val) => setStatusFilter(val)}
+          options={[
+            { value: "ALL", label: "All Statuses" },
+            { value: "OPEN", label: "Open" },
+            { value: "ASSIGNED", label: "Assigned" },
+            { value: "IN_PROGRESS", label: "In Progress" },
+            { value: "RESOLVED", label: "Resolved" },
+            { value: "CLOSED", label: "Closed" },
+            { value: "REJECTED", label: "Rejected" },
+          ]}
+        />
         <button type="button" className="tk-btn tk-btn-light" onClick={clearFilters}>
           Reset
         </button>

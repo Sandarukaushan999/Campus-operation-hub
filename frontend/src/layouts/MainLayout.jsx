@@ -1,15 +1,9 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "../components/common/Navbar";
 
 const MainLayout = () => (
-  <>
-    <div className="nav-wrap">
-      <Navbar />
-    </div>
-    <main className="page-shell">
-      <Outlet />
-    </main>
-  </>
+  <main className="page-shell" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <Outlet />
+  </main>
 );
 
 export default MainLayout;

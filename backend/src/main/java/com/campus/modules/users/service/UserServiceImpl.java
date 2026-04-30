@@ -132,6 +132,7 @@ public class UserServiceImpl implements UserService {
 
         String phone = request.phone();
         user.setPhone(phone == null ? null : phone.trim());
+        user.setProfileImageUrl(request.profileImageUrl());
 
         if (request.notificationPreferences() != null) {
             user.setNotificationPreferences(request.notificationPreferences());
@@ -139,7 +140,16 @@ public class UserServiceImpl implements UserService {
 
         user.setUpdatedAt(Instant.now());
 
-        return toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+
+        notificationPublisher.notify(
+            saved.getId(),
+            "PROFILE_UPDATED",
+            "Profile updated successfully.",
+            "Your personal information and preferences have been securely saved."
+        );
+
+        return toResponse(saved);
     }
 
     @Override
@@ -170,6 +180,7 @@ public class UserServiceImpl implements UserService {
             user.getId(),
             user.getFullName(),
             user.getPhone(),
+            user.getProfileImageUrl(),
             user.getEmail(),
             user.getRole(),
             user.isEnabled(),

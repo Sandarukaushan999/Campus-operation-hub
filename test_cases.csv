@@ -1,0 +1,39 @@
+ID,Module,Test Case,Expected Result,Status
+1,Authentication,"Register with valid Full Name, Email, Password, and Role (e.g., USER), then click "Sign Up"."","Account is created successfully; user is redirected to the login page with a success message.",Pass
+2,Authentication,"Login with valid registered Email and Password.","User logs in successfully and is redirected to the Home dashboard based on their role.",Pass
+3,Authentication,"Login with invalid Email or Password.","Login fails; an error message "Invalid credentials" is displayed.",Pass
+4,Authentication,"Click "Continue with Google" and authenticate via Google popup.","User is authenticated successfully, JWT is issued, and redirected to Home dashboard.",Pass
+5,Authentication,"As a 'USER', attempt to navigate to /admin/users via URL directly.","Access is denied; user is redirected to a 403 Forbidden or Home page.",Pass
+6,Authentication,"Click the "Logout" button in the Navbar.","User session is cleared (JWT removed) and redirected to the Login page.",Pass
+7,User Management,"As Admin, navigate to "Users" page.","A list of all registered users is displayed with Name, Email, Role, and Status.",Pass
+8,User Management,"Enter a valid user name or email in the search bar on the Users page.","The user list updates instantly to display only records matching the search query.",Pass
+9,User Management,"Select "TECHNICIAN" from the Role filter dropdown.","Only users with the TECHNICIAN role are displayed in the table.",Pass
+10,User Management,"Click "Add User", fill details, select "ADMIN" role, and submit.","A new admin user is created and appears in the table.",Pass
+11,User Management,"Change a user's role from USER to TECHNICIAN in the table dropdown, then click the Save button.","Role is updated successfully in the database, confirmed by the UI update.",Pass
+12,User Management,"Click the Delete icon on a user row and confirm the modal prompt.","The user is deleted and removed from the system table.",Pass
+13,Resource Mgmt,"Navigate to "Resources" page as any logged-in user.","List of resources (Rooms, Equipment) is displayed with current availability status.",Pass
+14,Resource Mgmt,"Select "LAB" from the Category filter.","Only laboratory resources are displayed in the grid.",Pass
+15,Resource Mgmt,"As Admin, click "Add Resource", fill Name, Type, Capacity, and Save.","New resource is successfully added and becomes visible to all users.",Pass
+16,Resource Mgmt,"As Admin, click "Edit" on a resource, change Capacity, and Save.","Resource capacity is updated successfully and reflects in the UI.",Pass
+17,Resource Mgmt,"As Admin, edit a resource and change status from "AVAILABLE" to "MAINTENANCE".","Status updates; the resource shows as Maintenance and can no longer be booked.",Pass
+18,Bookings,"Navigate to Bookings > Create, select a resource, choose valid Date/Time, and submit.","Booking is created with "PENDING" status and appears in My Bookings.",Pass
+19,Bookings,"Attempt to book a resource for a time slot that is already "APPROVED" for someone else.","System rejects the booking and shows a "Time slot unavailable" error.",Pass
+20,Bookings,"Navigate to "My Bookings".","List of the user's personal bookings is displayed, sorted chronologically.",Pass
+21,Bookings,"As Admin, navigate to Bookings list and click "Approve" on a PENDING booking.","Booking status changes to APPROVED; the requesting user is notified.",Pass
+22,Bookings,"As Admin, click "Reject" on a PENDING booking and provide a reason.","Booking status changes to REJECTED; the requesting user is notified.",Pass
+23,Bookings,"Go to My Bookings and click "Cancel" on an upcoming booking you created.","Booking is cancelled and the resource time slot becomes available again.",Pass
+24,Tickets,"Navigate to Tickets > Create, fill Title, Category, Priority, and Description, then submit.","Ticket is created with "OPEN" status.",Pass
+25,Tickets,"Attach an image file (.png/.jpg) to the Create Ticket form and submit.","Ticket is created and the image is successfully uploaded and visible in details.",Pass
+26,Tickets,"As Admin, open an unassigned Ticket, select a Technician, and click Assign.","Ticket status changes to ASSIGNED; the assigned technician receives a notification.",Pass
+27,Tickets,"As Technician, navigate to "Assigned Tickets".","Only tickets specifically assigned to this technician are displayed.",Pass
+28,Tickets,"As Technician, open an assigned ticket and update status to "IN_PROGRESS".","Ticket status updates immediately in the system.",Pass
+29,Tickets,"As Technician, change an in-progress ticket to "RESOLVED" and add resolution notes.","Ticket is resolved; original reporter is notified of the resolution.",Pass
+30,Tickets,"Open any ticket, type a message in the comment box, and submit.","Comment is appended to the ticket timeline with a timestamp.",Pass
+31,Notifications,"Have an Admin approve a booking while the requesting User A is logged in.","User A receives a real-time push/toast notification via WebSocket.",Pass
+32,Notifications,"Trigger a notification and view the Navbar notification bell icon.","The red badge displays the correct count of unread notifications.",Pass
+33,Notifications,"Open the notification dropdown and click on an unread notification.","The notification is marked as read, and the badge counter decreases.",Pass
+34,Notifications,"On Profile page, toggle OFF "Booking Updates", then have Admin approve a booking.","The booking is approved, but the user does NOT receive a notification.",Pass
+35,Analytics,"As Admin, view the Home page dashboard.","Total Bookings, Pending Requests, Active Resources, and Open Tickets show accurate metrics.",Pass
+36,Analytics,"As Admin, view Home page when there are pending approvals.","The alerts panel appears, accurately displaying pending booking/ticket counts.",Pass
+37,Analytics,"As Admin, navigate to the System Analytics page.","Charts and graphs load and render correctly.",Pass
+38,Analytics,"As Technician, view the Home page dashboard.","Work summary metrics display accurately.",Pass

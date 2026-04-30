@@ -11,5 +11,9 @@ public interface NotificationService {
     void markRead(String notificationId, String actorUserId);
 
     void markAllRead(String userId);
+
+    void deleteOne(String notificationId, String actorUserId);
+
+    void deleteAll(String userId);
 }
 

@@ -60,6 +60,26 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    @Override
+    public void deleteOne(String notificationId, String actorUserId) {
+        Notification notification = notificationRepository.findById(notificationId)
+            .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
+
+        if (!notification.getUserId().equals(actorUserId)) {
+            throw new ForbiddenException("You are not allowed to delete this notification");
+        }
+
+        notificationRepository.delete(notification);
+    }
+
+    @Override
+    public void deleteAll(String userId) {
+        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        if (!notifications.isEmpty()) {
+            notificationRepository.deleteAll(notifications);
+        }
+    }
+
     private NotificationResponse toResponse(Notification notification) {
         return new NotificationResponse(
             notification.getId(),

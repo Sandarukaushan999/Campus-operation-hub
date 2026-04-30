@@ -17,6 +17,9 @@ public record UpdateProfileRequest(
     )
     String phone,
 
+    @Size(max = 2_000_000, message = "Profile image is too large")
+    String profileImageUrl,
+
     java.util.Map<String, Boolean> notificationPreferences
 ) {
 }

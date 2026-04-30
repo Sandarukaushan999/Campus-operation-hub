@@ -3,6 +3,7 @@ import MainLayout from "../../layouts/MainLayout";
 import useAuth from "../../hooks/useAuth";
 import LoginPage from "../../features/auth/pages/LoginPage";
 import RegisterPage from "../../features/auth/pages/RegisterPage";
+import Home from "../../features/home/pages/Home";
 import UserDashboard from "../../features/dashboard/pages/UserDashboard";
 import ResourceListPage from "../../features/resources/pages/ResourceListPage";
 import CreateResourcePage from "../../features/resources/pages/CreateResourcePage";
@@ -47,7 +48,7 @@ const StaffRoute = ({ children }) => {
 
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : children;
+  return isAuthenticated ? <Navigate to="/home" replace /> : children;
 };
 
 const AppRouter = () => (
@@ -79,7 +80,8 @@ const AppRouter = () => (
         </ProtectedRoute>
       }
     >
-      <Route index element={<Navigate to="/dashboard" replace />} />
+      <Route index element={<Navigate to="/home" replace />} />
+      <Route path="home" element={<Home />} />
       <Route path="dashboard" element={<UserDashboard />} />
       <Route path="profile" element={<ProfilePage />} />
       <Route path="resources" element={<ResourceListPage />} />
